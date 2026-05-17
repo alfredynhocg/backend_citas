@@ -54,11 +54,13 @@ def create_app() -> Flask:
     from .routes.dates    import ns as dates_ns
     from .routes.memories import ns as memories_ns
     from .routes.users    import ns as users_ns
+    from .routes.test     import ns as test_ns
 
     api.add_namespace(auth_ns,     path="/auth")
     api.add_namespace(couples_ns,  path="/couples")
     api.add_namespace(dates_ns,    path="/dates")
     api.add_namespace(memories_ns, path="/memories")
+    api.add_namespace(test_ns,     path="/dev")
     api.add_namespace(users_ns,    path="/users")
 
     return app

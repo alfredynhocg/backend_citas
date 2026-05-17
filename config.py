@@ -15,7 +15,7 @@ JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7)
 
 SQLALCHEMY_DATABASE_URI = os.environ.get(
     "DATABASE_URL",
-    "mysql+pymysql://root:@localhost/citas_romanticas",
+    "mysql+pymysql://root:@localhost/citas_romanticas2",
 )
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 

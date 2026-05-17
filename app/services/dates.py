@@ -1,4 +1,4 @@
-from ..models import Category, CoupleDate, Couple, Date
+from ..models import Categoria as Category, Progreso as CoupleDate, Grupo as Couple, Cita as Date
 from ..extensions import db
 from datetime import datetime, timezone
 
