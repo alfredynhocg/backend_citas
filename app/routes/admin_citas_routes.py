@@ -3,7 +3,7 @@ from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..services.admin_cita_service import AdminCitaService
 from ..utils.decoradores import admin_requerido
-
+from ..models import User
 ns = Namespace('admin/citas', description='Administracion de citas, negocios y categorias')
 
 # Modelos para la documentacion
@@ -92,24 +92,34 @@ class AdminCategoriaDetail(Resource):
 
 
 # ==================== NEGOCIOS CRUD ====================
-
 @ns.route('/negocios')
 class AdminNegocios(Resource):
     @jwt_required()
-    @admin_requerido
     def get(self):
-        """Obtener todos los negocios"""
+        usuario_id = get_jwt_identity()
+        usuario = User.query.get(usuario_id)
+        if not usuario or usuario.rol_id != 1:
+            return {'error': 'Acceso denegado'}, 403
+        
         negocios = AdminCitaService.obtener_todos_negocios()
         return {'total': len(negocios), 'negocios': negocios}, 200
     
     @jwt_required()
-    @admin_requerido
     @ns.expect(negocio_modelo)
     def post(self):
-        """Crear un nuevo negocio"""
+        usuario_id = get_jwt_identity()
+        usuario = User.query.get(usuario_id)
+        if not usuario or usuario.rol_id != 1:
+            return {'error': 'Acceso denegado'}, 403
+        
         data = request.get_json()
-        resultado, status = AdminCitaService.crear_negocio(data)
-        return resultado, status
+        resultado = AdminCitaService.crear_negocio(data)
+        
+        # Si resultado es una tupla (dict, status)
+        if isinstance(resultado, tuple):
+            return resultado[0], resultado[1]
+        
+        return resultado, 201
 
 @ns.route('/negocios/<int:negocio_id>')
 class AdminNegocioDetail(Resource):
@@ -144,78 +154,101 @@ class AdminNegocioDetail(Resource):
 @ns.route('/citas')
 class AdminCitas(Resource):
     @jwt_required()
-    @admin_requerido
     def get(self):
-        """Obtener todas las citas"""
+        usuario_id = get_jwt_identity()
+        usuario = User.query.get(usuario_id)
+        if not usuario or usuario.rol_id != 1:
+            return {'error': 'Acceso denegado'}, 403
+        
         citas = AdminCitaService.obtener_todas_citas()
         return {'total': len(citas), 'citas': citas}, 200
     
     @jwt_required()
-    @admin_requerido
     @ns.expect(cita_modelo)
     def post(self):
-        """Crear una nueva cita"""
+        usuario_id = get_jwt_identity()
+        usuario = User.query.get(usuario_id)
+        if not usuario or usuario.rol_id != 1:
+            return {'error': 'Acceso denegado'}, 403
+        
         data = request.get_json()
-        resultado, status = AdminCitaService.crear_cita(data)
-        return resultado, status
+        resultado = AdminCitaService.crear_cita(data)
+        return resultado, 201
 
-@ns.route('/citas/<int:cita_id>')
-class AdminCitaDetail(Resource):
-    @jwt_required()
-    @admin_requerido
-    def get(self, cita_id):
-        """Obtener una cita por ID"""
-        cita = AdminCitaService.obtener_cita_por_id(cita_id)
-        if not cita:
-            return {'error': 'Cita no encontrada'}, 404
-        return cita, 200
-    
-    @jwt_required()
-    @admin_requerido
-    @ns.expect(cita_modelo)
-    def put(self, cita_id):
-        """Actualizar una cita"""
-        data = request.get_json()
-        resultado, status = AdminCitaService.actualizar_cita(cita_id, data)
-        return resultado, status
-    
-    @jwt_required()
-    @admin_requerido
-    def delete(self, cita_id):
-        """Eliminar una cita"""
-        resultado, status = AdminCitaService.eliminar_cita(cita_id)
-        return resultado, status
+    @ns.route('/citas/<int:cita_id>')
+    class AdminCitaDetail(Resource):
+        @jwt_required()
+        def get(self, cita_id):
+            usuario_id = get_jwt_identity()
+            usuario = User.query.get(usuario_id)
+            if not usuario or usuario.rol_id != 1:
+                return {'error': 'Acceso denegado'}, 403
+            
+            cita = AdminCitaService.obtener_cita_por_id(cita_id)
+            if not cita:
+                return {'error': 'Cita no encontrada'}, 404
+            return cita, 200
+        
+        @jwt_required()
+        @ns.expect(cita_modelo)
+        def put(self, cita_id):
+            usuario_id = get_jwt_identity()
+            usuario = User.query.get(usuario_id)
+            if not usuario or usuario.rol_id != 1:
+                return {'error': 'Acceso denegado'}, 403
+            
+            data = request.get_json()
+            resultado = AdminCitaService.actualizar_cita(cita_id, data)
+            return resultado, 200
+        
+        @jwt_required()
+        def delete(self, cita_id):
+            usuario_id = get_jwt_identity()
+            usuario = User.query.get(usuario_id)
+            if not usuario or usuario.rol_id != 1:
+                return {'error': 'Acceso denegado'}, 403
+            
+            resultado = AdminCitaService.eliminar_cita(cita_id)
+            return resultado, 200
 
 
-# ==================== FOTOS CRUD ====================
+        # ==================== FOTOS CRUD ====================
 
-@ns.route('/citas/<int:cita_id>/fotos')
-class AdminFotosCita(Resource):
-    @jwt_required()
-    @admin_requerido
-    def get(self, cita_id):
-        """Obtener todas las fotos de una cita"""
-        fotos = AdminCitaService.obtener_fotos_cita(cita_id)
-        return {'total': len(fotos), 'fotos': fotos}, 200
-    
-    @jwt_required()
-    @admin_requerido
-    @ns.expect(foto_modelo)
-    def post(self, cita_id):
-        """Agregar una foto a una cita"""
-        data = request.get_json()
-        resultado, status = AdminCitaService.agregar_foto_cita(cita_id, data)
-        return resultado, status
+    @ns.route('/citas/<int:cita_id>/fotos')
+    class AdminFotosCita(Resource):
+        @jwt_required()
+        def get(self, cita_id):
+            usuario_id = get_jwt_identity()
+            usuario = User.query.get(usuario_id)
+            if not usuario or usuario.rol_id != 1:
+                return {'error': 'Acceso denegado'}, 403
+            
+            fotos = AdminCitaService.obtener_fotos_cita(cita_id)
+            return {'total': len(fotos), 'fotos': fotos}, 200
+        
+        @jwt_required()
+        @ns.expect(foto_modelo)
+        def post(self, cita_id):
+            usuario_id = get_jwt_identity()
+            usuario = User.query.get(usuario_id)
+            if not usuario or usuario.rol_id != 1:
+                return {'error': 'Acceso denegado'}, 403
+            
+            data = request.get_json()
+            resultado = AdminCitaService.agregar_foto_cita(cita_id, data)
+            return resultado, 201
 
-@ns.route('/fotos/<int:foto_id>')
-class AdminFotoDetail(Resource):
-    @jwt_required()
-    @admin_requerido
-    def delete(self, foto_id):
-        """Eliminar una foto"""
-        resultado, status = AdminCitaService.eliminar_foto(foto_id)
-        return resultado, status
-
+    @ns.route('/fotos/<int:foto_id>')
+    class AdminFotoDetail(Resource):
+        @jwt_required()
+        def delete(self, foto_id):
+            usuario_id = get_jwt_identity()
+            usuario = User.query.get(usuario_id)
+            if not usuario or usuario.rol_id != 1:
+                return {'error': 'Acceso denegado'}, 403
+            
+            resultado = AdminCitaService.eliminar_foto(foto_id)
+            return resultado, 200
 
 # ==================== ESTADISTICAS ====================
 

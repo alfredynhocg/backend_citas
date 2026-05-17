@@ -176,64 +176,16 @@ class AdminCitaService:
     # ==================== CITAS ====================
 
     @staticmethod
-    def obtener_todas_citas():
-        citas = Cita.query.all()
-        return [{
-            'id': c.id,
-            'nombre': c.nombre,
-            'descripcion': c.descripcion[:100] + '...' if c.descripcion and len(c.descripcion) > 100 else c.descripcion,
-            'categoria_id': c.categoria_id,
-            'categoria_nombre': c.categoria.nombre if c.categoria else None,
-            'departamento_id': c.departamento_id,
-            'departamento_nombre': c.departamento.nombre if c.departamento else None,
-            'negocio_id': c.negocio_id,
-            'negocio_nombre': c.negocio.nombre if c.negocio else None,
-            'puntos': c.puntos,
-            'portada_url': c.portada_url,
-            'activo': c.activo,
-            'total_completadas': Progreso.query.filter_by(cita_id=c.id, completado=True).count()
-        } for c in citas]
-
-    @staticmethod
-    def obtener_cita_por_id(cita_id):
-        c = Cita.query.get(cita_id)
-        if not c:
-            return None
-        return {
-            'id': c.id,
-            'nombre': c.nombre,
-            'descripcion': c.descripcion,
-            'categoria_id': c.categoria_id,
-            'categoria_nombre': c.categoria.nombre if c.categoria else None,
-            'departamento_id': c.departamento_id,
-            'departamento_nombre': c.departamento.nombre if c.departamento else None,
-            'negocio_id': c.negocio_id,
-            'negocio_nombre': c.negocio.nombre if c.negocio else None,
-            'latitud': float(c.latitud) if c.latitud else None,
-            'longitud': float(c.longitud) if c.longitud else None,
-            'direccion': c.direccion,
-            'puntos': c.puntos,
-            'portada_url': c.portada_url,
-            'activo': c.activo
-        }
-
-    @staticmethod
     def crear_cita(data):
         nombre = data.get('nombre', '').strip()
         if not nombre:
             return {'error': 'El nombre de la cita es requerido'}, 400
         
-        if not data.get('categoria_id'):
-            return {'error': 'La categoria es requerida'}, 400
-        
-        if not data.get('departamento_id'):
-            return {'error': 'El departamento es requerido'}, 400
-        
         cita = Cita(
             nombre=nombre,
             descripcion=data.get('descripcion'),
-            categoria_id=data['categoria_id'],
-            departamento_id=data['departamento_id'],
+            categoria_id=data.get('categoria_id'),
+            departamento_id=data.get('departamento_id'),
             negocio_id=data.get('negocio_id'),
             latitud=data.get('latitud'),
             longitud=data.get('longitud'),
@@ -245,7 +197,7 @@ class AdminCitaService:
         db.session.add(cita)
         db.session.commit()
         
-        return {'mensaje': 'Cita creada', 'id': cita.id, 'nombre': cita.nombre}, 201
+        return {'mensaje': 'Cita creada', 'id': cita.id, 'nombre': cita.nombre}
 
     @staticmethod
     def actualizar_cita(cita_id, data):
@@ -277,7 +229,7 @@ class AdminCitaService:
             cita.activo = data['activo']
         
         db.session.commit()
-        return {'mensaje': 'Cita actualizada', 'id': cita.id}, 200
+        return {'mensaje': 'Cita actualizada', 'id': cita.id}
 
     @staticmethod
     def eliminar_cita(cita_id):
@@ -285,59 +237,10 @@ class AdminCitaService:
         if not cita:
             return {'error': 'Cita no encontrada'}, 404
         
-        # Eliminar fotos asociadas
         FotoCita.query.filter_by(cita_id=cita_id).delete()
-        
         db.session.delete(cita)
         db.session.commit()
-        return {'mensaje': 'Cita eliminada'}, 200
-
-
-    # ==================== FOTOS ====================
-
-    @staticmethod
-    def obtener_fotos_cita(cita_id):
-        fotos = FotoCita.query.filter_by(cita_id=cita_id).all()
-        return [{
-            'id': f.id,
-            'url': f.url,
-            'descripcion': f.descripcion,
-            'usuario_id': f.usuario_id,
-            'usuario_nombre': f.usuario.nombre if f.usuario else None,
-            'fecha_subida': str(f.fecha_subida)
-        } for f in fotos]
-
-    @staticmethod
-    def agregar_foto_cita(cita_id, data):
-        cita = Cita.query.get(cita_id)
-        if not cita:
-            return {'error': 'Cita no encontrada'}, 404
-        
-        url = data.get('url', '').strip()
-        if not url:
-            return {'error': 'La URL de la foto es requerida'}, 400
-        
-        foto = FotoCita(
-            cita_id=cita_id,
-            url=url,
-            descripcion=data.get('descripcion')
-        )
-        db.session.add(foto)
-        db.session.commit()
-        
-        return {'mensaje': 'Foto agregada', 'id': foto.id, 'url': foto.url}, 201
-
-    @staticmethod
-    def eliminar_foto(foto_id):
-        foto = FotoCita.query.get(foto_id)
-        if not foto:
-            return {'error': 'Foto no encontrada'}, 404
-        
-        db.session.delete(foto)
-        db.session.commit()
-        return {'mensaje': 'Foto eliminada'}, 200
-
-
+        return {'mensaje': 'Cita eliminada'}
     # ==================== ESTADISTICAS ====================
 
     @staticmethod
