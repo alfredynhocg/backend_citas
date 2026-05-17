@@ -9,7 +9,6 @@ class Role(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(50), nullable=True)
-
 class User(db.Model):
     __tablename__ = "usuarios"
 
@@ -17,7 +16,7 @@ class User(db.Model):
     nombre = db.Column(db.String(100), nullable=True)
     email = db.Column(db.String(100), unique=True, nullable=True)
     password_hash = db.Column(db.String(255), nullable=True)
-    rol_id = db.Column(db.Integer, db.ForeignKey("roles.id"), nullable=True)
+    rol_id = db.Column(db.Integer, db.ForeignKey("roles.id"), nullable=True, default=2)
     departamento_actual = db.Column(db.String(50), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=_now, nullable=True)
     activo = db.Column(db.Boolean, default=True, nullable=True)
@@ -33,7 +32,20 @@ class User(db.Model):
     certificados_usuario = db.relationship("Certificado", foreign_keys="Certificado.usuario_id", back_populates="usuario")
     mensajes_enviados = db.relationship("Mensaje", foreign_keys="Mensaje.de_usuario_id", back_populates="emisor")
     mensajes_recibidos = db.relationship("Mensaje", foreign_keys="Mensaje.para_usuario_id", back_populates="receptor")
-
+def crear_roles_por_defecto():
+    from .extensions import db
+    from sqlalchemy import func
+    # Verificar si existe rol con id=1
+    admin = Role.query.get(1)
+    normal = Role.query.get(2)
+    if not admin:
+        admin = Role(id=1, nombre='administrador')
+        db.session.add(admin)
+    if not normal:
+        normal = Role(id=2, nombre='usuario_normal')
+        db.session.add(normal)
+    db.session.commit()
+    
 class Grupo(db.Model):
     __tablename__ = "grupos"
 

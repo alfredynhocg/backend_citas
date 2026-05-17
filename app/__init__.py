@@ -30,6 +30,8 @@ def create_app() -> Flask:
     with app.app_context():
         from . import models  # noqa: F401
         db.create_all()
+        from .models import crear_roles_por_defecto
+        crear_roles_por_defecto()
 
     api = Api(
         app,
@@ -55,6 +57,9 @@ def create_app() -> Flask:
     from .routes.memories import ns as memories_ns
     from .routes.users    import ns as users_ns
     from .routes.test     import ns as test_ns
+    from .routes.usuario_routes import ns as usuario_ns
+    from .routes.cita_routes import ns as citas_ns
+    from .routes.admin_citas_routes import ns as admin_citas_ns
 
     api.add_namespace(auth_ns,     path="/auth")
     api.add_namespace(couples_ns,  path="/couples")
@@ -62,6 +67,11 @@ def create_app() -> Flask:
     api.add_namespace(memories_ns, path="/memories")
     api.add_namespace(test_ns,     path="/dev")
     api.add_namespace(users_ns,    path="/users")
+    
+    api.add_namespace(usuario_ns, path="/usuarios")
+    api.add_namespace(citas_ns, path="/citas")
+    api.add_namespace(admin_citas_ns, path="/admin/citas")
+
 
     return app
 
