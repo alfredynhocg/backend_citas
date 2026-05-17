@@ -9,13 +9,13 @@ from ..models import User
 def register_user(name: str, email: str, password: str) -> dict:
     if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
         raise ValueError("Email inválido")
-    if len(password) < 8:
+    if len(password) < 4:
         raise ValueError("La contraseña debe tener al menos 8 caracteres")
     if User.query.filter_by(email=email).first():
         raise ValueError("El email ya está registrado")
 
     user = User(
-        name=name.strip(),
+        nombre=name.strip(),
         email=email.lower().strip(),
         password_hash=bcrypt.generate_password_hash(password).decode("utf-8"),
     )
@@ -52,10 +52,10 @@ def _tokens(user: User) -> dict:
 
 def _user_dict(user: User) -> dict:
     return {
-        "id":         user.id,
-        "name":       user.name,
-        "email":      user.email,
-        "role":       user.role,
-        "is_active":  user.is_active,
-        "created_at": user.created_at.isoformat(),
+        "id": user.id,
+        "nombre": user.nombre,
+        "email": user.email,
+        "rol_id": user.rol_id,
+        "activo": user.activo,
+        "fecha_registro": user.fecha_registro.isoformat() if user.fecha_registro else None,
     }
