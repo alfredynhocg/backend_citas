@@ -22,6 +22,8 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 IMG_UPLOAD_FOLDER = os.path.join(basedir, "app", "static", "uploads") + os.sep
 IMG_UPLOAD_URL    = "/static/uploads/"
 MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5 MB
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
 
 CORS_ORIGINS = os.environ.get(
     "CORS_ORIGINS",

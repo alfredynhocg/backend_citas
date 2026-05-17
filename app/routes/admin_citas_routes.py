@@ -1,9 +1,12 @@
 from flask_restx import Namespace, Resource, fields
-from flask import request
+from flask import request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..services.admin_cita_service import AdminCitaService
 from ..utils.decoradores import admin_requerido
-from ..models import User
+from ..models import User, Cita, FotoCita, db
+import os
+import secrets
+from werkzeug.utils import secure_filename
 ns = Namespace('admin/citas', description='Administracion de citas, negocios y categorias')
 
 # Modelos para la documentacion
@@ -249,7 +252,85 @@ class AdminCitas(Resource):
             
             resultado = AdminCitaService.eliminar_foto(foto_id)
             return resultado, 200
-
+    #Crear Cita con imagenes
+    @ns.route('/con-fotos')
+    class AdminCitaConFotos(Resource):
+        @jwt_required()
+        def post(self):
+            """Crear una cita con imágenes (multipart/form-data)"""
+            usuario_id = get_jwt_identity()
+            usuario = User.query.get(usuario_id)
+            if not usuario or usuario.rol_id != 1:
+                return {'error': 'Acceso denegado'}, 403
+            
+            # Obtener datos del formulario
+            nombre = request.form.get('nombre')
+            descripcion = request.form.get('descripcion')
+            categoria_id = request.form.get('categoria_id', type=int)
+            departamento_id = request.form.get('departamento_id', type=int)
+            negocio_id = request.form.get('negocio_id', type=int)
+            latitud = request.form.get('latitud', type=float)
+            longitud = request.form.get('longitud', type=float)
+            direccion = request.form.get('direccion')
+            puntos = request.form.get('puntos', type=int, default=10)
+            
+            # Validaciones
+            if not nombre:
+                return {'error': 'El nombre es requerido'}, 400
+            if not categoria_id:
+                return {'error': 'La categoría es requerida'}, 400
+            if not departamento_id:
+                return {'error': 'El departamento es requerido'}, 400
+            
+            # Crear la cita
+            cita = Cita(
+                nombre=nombre,
+                descripcion=descripcion,
+                categoria_id=categoria_id,
+                departamento_id=departamento_id,
+                negocio_id=negocio_id,
+                latitud=latitud,
+                longitud=longitud,
+                direccion=direccion,
+                puntos=puntos
+            )
+            db.session.add(cita)
+            db.session.flush()
+            
+            # Subir fotos
+            fotos_subidas = []
+            upload_folder = current_app.config.get('IMG_UPLOAD_FOLDER', 'app/static/uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            archivos = request.files.getlist('fotos')
+            for archivo in archivos:
+                if archivo and archivo.filename:
+                    from werkzeug.utils import secure_filename
+                    import secrets
+                    
+                    ext = archivo.filename.rsplit('.', 1)[1].lower()
+                    filename = f"cita_{cita.id}_{secrets.token_hex(8)}.{ext}"
+                    filepath = os.path.join(upload_folder, filename)
+                    archivo.save(filepath)
+                    
+                    foto_url = f"/static/uploads/{filename}"
+                    
+                    foto = FotoCita(cita_id=cita.id, url=foto_url)
+                    db.session.add(foto)
+                    fotos_subidas.append(foto_url)
+            
+            db.session.commit()
+            
+            return {
+                'mensaje': 'Cita creada exitosamente',
+                'cita': {
+                    'id': cita.id,
+                    'nombre': cita.nombre
+                },
+                'fotos_subidas': fotos_subidas,
+                'total_fotos': len(fotos_subidas)
+            }, 201
+    
 # ==================== ESTADISTICAS ====================
 
 @ns.route('/estadisticas')

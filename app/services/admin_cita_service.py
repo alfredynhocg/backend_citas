@@ -5,7 +5,88 @@ from sqlalchemy import func
 class AdminCitaService:
 
     # ==================== CATEGORIAS ====================
+    @staticmethod
+    def crear_cita_con_archivos(data, archivos):
+        """Crear cita con imágenes subidas como archivos"""
+        
+        # Crear la cita
+        cita = Cita(
+            nombre=data.get('nombre'),
+            descripcion=data.get('descripcion'),
+            categoria_id=data.get('categoria_id'),
+            departamento_id=data.get('departamento_id'),
+            negocio_id=data.get('negocio_id'),
+            latitud=data.get('latitud'),
+            longitud=data.get('longitud'),
+            direccion=data.get('direccion'),
+            puntos=data.get('puntos', 10),
+            portada_url=data.get('portada_url'),
+            activo=data.get('activo', True)
+        )
+        db.session.add(cita)
+        db.session.flush()  # Para obtener el ID sin commit
+        
+        # Subir las fotos
+        fotos_subidas = []
+        upload_folder = current_app.config.get('IMG_UPLOAD_FOLDER', 'app/static/uploads')
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        for archivo in archivos:
+            if archivo and archivo.filename:
+                # Generar nombre único
+                ext = archivo.filename.rsplit('.', 1)[1].lower()
+                filename = f"cita_{cita.id}_{secrets.token_hex(8)}.{ext}"
+                filepath = os.path.join(upload_folder, filename)
+                archivo.save(filepath)
+                
+                foto_url = f"/static/uploads/{filename}"
+                
+                foto = FotoCita(
+                    cita_id=cita.id,
+                    url=foto_url,
+                    descripcion=data.get('foto_descripcion')
+                )
+                db.session.add(foto)
+                fotos_subidas.append(foto_url)
+        
+        db.session.commit()
+        
+        return {
+            'id': cita.id,
+            'nombre': cita.nombre,
+            'fotos': fotos_subidas
+        }
     
+    @staticmethod
+    def agregar_fotos_a_cita(cita_id, archivos):
+        """Agregar fotos a una cita existente"""
+        cita = Cita.query.get(cita_id)
+        if not cita:
+            return None
+        
+        fotos_subidas = []
+        upload_folder = current_app.config.get('IMG_UPLOAD_FOLDER', 'app/static/uploads')
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        for archivo in archivos:
+            if archivo and archivo.filename:
+                ext = archivo.filename.rsplit('.', 1)[1].lower()
+                filename = f"cita_{cita_id}_{secrets.token_hex(8)}.{ext}"
+                filepath = os.path.join(upload_folder, filename)
+                archivo.save(filepath)
+                
+                foto_url = f"/static/uploads/{filename}"
+                
+                foto = FotoCita(
+                    cita_id=cita_id,
+                    url=foto_url
+                )
+                db.session.add(foto)
+                fotos_subidas.append(foto_url)
+        
+        db.session.commit()
+        return fotos_subidas
+
     @staticmethod
     def obtener_todas_categorias():
         categorias = Categoria.query.all()
