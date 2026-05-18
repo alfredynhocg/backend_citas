@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from .extensions import db
+from flask_login import UserMixin
 
 def _now():
     return datetime.now(timezone.utc)
@@ -9,7 +10,7 @@ class Role(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(50), nullable=True)
-class User(db.Model):
+class User(UserMixin,db.Model):
     __tablename__ = "usuarios"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -20,6 +21,21 @@ class User(db.Model):
     departamento_actual = db.Column(db.String(50), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=_now, nullable=True)
     activo = db.Column(db.Boolean, default=True, nullable=True)
+
+    @property
+    def is_active(self):
+        return self.activo
+    
+    @property
+    def is_authenticated(self):
+        return True
+    
+    @property
+    def is_anonymous(self):
+        return False
+    
+    def get_id(self):
+        return str(self.id)
 
     rol = db.relationship("Role", backref="usuarios")
     grupos_miembro = db.relationship("GrupoMiembro", back_populates="usuario", lazy="dynamic")
@@ -287,7 +303,19 @@ class Mensaje(db.Model):
     grupo = db.relationship("Grupo", back_populates="mensajes_grupo")
     emisor = db.relationship("User", foreign_keys=[de_usuario_id], back_populates="mensajes_enviados")
     receptor = db.relationship("User", foreign_keys=[para_usuario_id], back_populates="mensajes_recibidos")
+class ConsultaIA(db.Model):
+    __tablename__ = 'consultas_ia'
     
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)  # ← CAMBIADO: 'usuarios.id'
+    pregunta = db.Column(db.Text, nullable=False)
+    respuesta = db.Column(db.Text, nullable=False)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    modelo_usado = db.Column(db.String(100), default='gpt-3.5-turbo')
+    tokens_usados = db.Column(db.Integer, default=0)
+    
+    # Relación con User
+    user = db.relationship('User', backref='consultas_ia', lazy=True, foreign_keys=[user_id])
 Category = Categoria
 Couple = Grupo
 CoupleDate = Progreso
