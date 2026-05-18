@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from .extensions import db
+from flask_login import UserMixin
 
 def _now():
     return datetime.now(timezone.utc)
@@ -9,18 +10,32 @@ class Role(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(50), nullable=True)
-
-class User(db.Model):
+class User(UserMixin,db.Model):
     __tablename__ = "usuarios"
 
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=True)
     email = db.Column(db.String(100), unique=True, nullable=True)
     password_hash = db.Column(db.String(255), nullable=True)
-    rol_id = db.Column(db.Integer, db.ForeignKey("roles.id"), nullable=True)
+    rol_id = db.Column(db.Integer, db.ForeignKey("roles.id"), nullable=True, default=2)
     departamento_actual = db.Column(db.String(50), nullable=True)
     fecha_registro = db.Column(db.DateTime, default=_now, nullable=True)
     activo = db.Column(db.Boolean, default=True, nullable=True)
+
+    @property
+    def is_active(self):
+        return self.activo
+    
+    @property
+    def is_authenticated(self):
+        return True
+    
+    @property
+    def is_anonymous(self):
+        return False
+    
+    def get_id(self):
+        return str(self.id)
 
     rol = db.relationship("Role", backref="usuarios")
     grupos_miembro = db.relationship("GrupoMiembro", back_populates="usuario", lazy="dynamic")
@@ -33,7 +48,20 @@ class User(db.Model):
     certificados_usuario = db.relationship("Certificado", foreign_keys="Certificado.usuario_id", back_populates="usuario")
     mensajes_enviados = db.relationship("Mensaje", foreign_keys="Mensaje.de_usuario_id", back_populates="emisor")
     mensajes_recibidos = db.relationship("Mensaje", foreign_keys="Mensaje.para_usuario_id", back_populates="receptor")
-
+def crear_roles_por_defecto():
+    from .extensions import db
+    from sqlalchemy import func
+    # Verificar si existe rol con id=1
+    admin = Role.query.get(1)
+    normal = Role.query.get(2)
+    if not admin:
+        admin = Role(id=1, nombre='administrador')
+        db.session.add(admin)
+    if not normal:
+        normal = Role(id=2, nombre='usuario_normal')
+        db.session.add(normal)
+    db.session.commit()
+    
 class Grupo(db.Model):
     __tablename__ = "grupos"
 
@@ -275,7 +303,19 @@ class Mensaje(db.Model):
     grupo = db.relationship("Grupo", back_populates="mensajes_grupo")
     emisor = db.relationship("User", foreign_keys=[de_usuario_id], back_populates="mensajes_enviados")
     receptor = db.relationship("User", foreign_keys=[para_usuario_id], back_populates="mensajes_recibidos")
+class ConsultaIA(db.Model):
+    __tablename__ = 'consultas_ia'
     
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)  # ← CAMBIADO: 'usuarios.id'
+    pregunta = db.Column(db.Text, nullable=False)
+    respuesta = db.Column(db.Text, nullable=False)
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    modelo_usado = db.Column(db.String(100), default='gpt-3.5-turbo')
+    tokens_usados = db.Column(db.Integer, default=0)
+    
+    # Relación con User
+    user = db.relationship('User', backref='consultas_ia', lazy=True, foreign_keys=[user_id])
 Category = Categoria
 Couple = Grupo
 CoupleDate = Progreso
