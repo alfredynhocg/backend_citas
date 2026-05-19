@@ -7,7 +7,8 @@ from flask_restx import Api
 from jwt.exceptions import PyJWTError
 from werkzeug.exceptions import HTTPException
 
-from flask_admin import Admin
+from flask_admin import Admin, BaseView, expose
+
 from flask_admin.contrib.sqla import ModelView
 
 from .extensions import bcrypt, db, jwt
@@ -42,50 +43,85 @@ def create_app() -> Flask:
         crear_roles_por_defecto()
     
     # ============ FLASK-ADMIN ============
-    admin = Admin(app, name='Panel Admin Citas')
+    # ============ FLASK-ADMIN ============
+
+    admin = Admin(app, name='100 Citas Bolivia')
+
     from flask_admin.base import MenuLink
 
+    class LoginMenuLink(MenuLink):
+        def is_accessible(self):
+            return not session.get('admin_logged_in', False)
+
+
+    class LogoutMenuLink(MenuLink):
+        def is_accessible(self):
+            return session.get('admin_logged_in', False)
+
+
     admin.add_link(
-        MenuLink(
-            name='Iniciar Sesión',
-            category='',
+        LoginMenuLink(
+            name='Iniciar',
             url='/login'
         )
     )
+
+    admin.add_link(
+        LogoutMenuLink(
+            name='Finalizar',
+            url='/logout'
+        )
+    )
+
     # Importar modelos después de crear tablas
     from .models import User, Role, Categoria, Cita, Negocio, Departamento
-    
+
+
     class AdminModelView(ModelView):
         def is_accessible(self):
             return session.get('admin_logged_in', False)
-        
+
         def inaccessible_callback(self, name, **kwargs):
             return redirect('/login')
-    
-    # Agregar vistas al admin
+
+
+    # Vistas al admin
     admin.add_view(AdminModelView(User, db.session, name='Usuarios'))
     admin.add_view(AdminModelView(Role, db.session, name='Roles'))
     admin.add_view(AdminModelView(Categoria, db.session, name='Categorías'))
     admin.add_view(AdminModelView(Cita, db.session, name='Citas'))
     admin.add_view(AdminModelView(Negocio, db.session, name='Negocios'))
     admin.add_view(AdminModelView(Departamento, db.session, name='Departamentos'))
-    
+
+
+    class ReportesView(BaseView):
+
+        @expose('/')
+        def index(self):
+            return self.render('admin/reportes.html')
+
+
+    admin.add_view(ReportesView(name='Reportes', endpoint='reportes'))
     # ============ RUTAS LOGIN/LOGOUT ============
     @app.route('/login', methods=['GET', 'POST'])
     def login_page():
         if request.method == 'POST':
+            username = request.form.get('username')
             password = request.form.get('password')
-            if password == 'admin123':
+
+            # 🔥 USUARIO Y PASSWORD HARDCODEADO (puedes cambiar luego a BD)
+            if username == 'admin' and password == 'admin123':
                 session['admin_logged_in'] = True
+                session['admin_user'] = username
                 return redirect('/admin')
             else:
                 return '''
                 <script>
-                    alert("Contraseña incorrecta");
+                    alert("Usuario o contraseña incorrectos");
                     window.location.href = "/login";
                 </script>
                 '''
-        
+
         return '''
         <!DOCTYPE html>
         <html>
@@ -94,52 +130,84 @@ def create_app() -> Flask:
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
             <style>
-                body { 
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    height: 100vh; 
+                body {
+                    background: linear-gradient(135deg, #0f172a, #1e293b);
+                    height: 100vh;
                     display: flex;
                     justify-content: center;
                     align-items: center;
+                    font-family: Arial, sans-serif;
                 }
-                .login-box { 
-                    background: white; 
-                    border-radius: 10px; 
-                    padding: 30px; 
-                    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+
+                .login-box {
+                    background: #ffffff;
+                    border-radius: 16px;
+                    padding: 35px;
+                    box-shadow: 0 10px 40px rgba(0,0,0,0.25);
                     width: 100%;
-                    max-width: 400px;
+                    max-width: 420px;
+                    transition: transform 0.2s ease;
                 }
-                .btn-login { 
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    border: none; 
-                    width: 100%; 
+
+                .login-box:hover {
+                    transform: translateY(-3px);
                 }
-                .btn-login:hover { 
-                    opacity: 0.9; 
+
+                .btn-login {
+                    background: linear-gradient(135deg, #22c55e, #16a34a);
+                    border: none;
+                    width: 100%;
+                    padding: 10px;
+                    font-weight: bold;
                 }
-            </style>
+
+                .btn-login:hover {
+                    opacity: 0.9;
+                    transform: scale(1.02);
+                }
+
+                input.form-control {
+                    border-radius: 10px;
+                    padding: 10px;
+                }
+
+                h3 {
+                    font-weight: bold;
+                    color: #0f172a;
+                }
+                </style>
         </head>
+
         <body>
-            <div class="container">
-                <div class="row justify-content-center">
-                    <div class="col-md-4">
-                        <div class="login-box">
-                            <h3 class="text-center mb-4">Panel Administrativo</h3>
-                            <p class="text-center text-muted">100 Citas Románticas</p>
-                            <form method="POST">
-                                <div class="mb-3">
-                                    <label>Contraseña</label>
-                                    <input type="password" name="password" class="form-control" placeholder="admin123" required>
-                                </div>
-                                <button type="submit" class="btn btn-primary btn-login">Ingresar al Panel</button>
-                            </form>
-                            <hr>
-                            <small class="text-muted">Contraseña: admin123</small>
-                        </div>
+
+            <div class="login-box">
+                <h3 class="text-center mb-3">Panel Administrativo</h3>
+                <p class="text-center text-muted">Sistema de Citas</p>
+
+                <form method="POST">
+
+                    <div class="mb-3">
+                        <label>Usuario</label>
+                        <input type="text" name="username" class="form-control" placeholder="admin" required>
                     </div>
-                </div>
+
+                    <div class="mb-3">
+                        <label>Contraseña</label>
+                        <input type="password" name="password" class="form-control" placeholder="admin123" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-login">
+                        Ingresar
+                    </button>
+
+                </form>
+
+                <hr>
+                <small class="text-muted">Usuario: admin | Password: admin123</small>
             </div>
+
         </body>
         </html>
         '''
