@@ -23,12 +23,13 @@ login_model = ns.model("Login", {
 })
 
 user_model = ns.model("User", {
-    "id": fields.Integer(),
-    "nombre": fields.String(),
-    "email": fields.String(),
-    "rol_id": fields.Integer(),
-    "activo": fields.Boolean(),
-    "fecha_registro": fields.String(),
+    "id":         fields.Integer(),
+    "name":       fields.String(),
+    "email":      fields.String(),
+    "role":       fields.String(),
+    "rol_id":     fields.Integer(),
+    "is_active":  fields.Boolean(),
+    "created_at": fields.String(),
 })
 
 tokens_model = ns.model("Tokens", {
@@ -115,14 +116,7 @@ class Me(Resource):
         except LookupError as e:
             ns.abort(404, str(e))
 
-        return {
-            "id": user.id,
-            "nombre": user.nombre,
-            "email": user.email,
-            "rol_id": user.rol_id,
-            "activo": user.activo,
-            "fecha_registro": user.fecha_registro.isoformat() if user.fecha_registro else None,
-        }
+        return auth_service._user_dict(user)
 
 
 # =========================

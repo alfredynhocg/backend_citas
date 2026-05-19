@@ -1,6 +1,9 @@
+import os
+import secrets
 from flask_restx import Namespace, Resource, fields
-from flask import request
+from flask import request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from werkzeug.utils import secure_filename
 from ..services.suscripcion_service import SuscripcionService
 
 ns = Namespace('suscripciones', description='Suscripciones y pagos')
@@ -54,3 +57,24 @@ class MisSuscripciones(Resource):
             'fecha_expiracion': str(s.fecha_expiracion),
             'activo': s.activo
         } for s in suscripciones], 200
+
+ALLOWED = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf'}
+
+@ns.route('/upload-comprobante')
+class SubirComprobante(Resource):
+    @jwt_required()
+    def post(self):
+        if 'file' not in request.files:
+            return {'error': 'No se envió ningún archivo'}, 400
+        file = request.files['file']
+        if not file.filename:
+            return {'error': 'Archivo sin nombre'}, 400
+        ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+        if ext not in ALLOWED:
+            return {'error': f'Extensión no permitida. Usa: {", ".join(ALLOWED)}'}, 400
+        filename = f"comprobante_{secrets.token_hex(10)}.{ext}"
+        upload_folder = current_app.config.get('IMG_UPLOAD_FOLDER', 'app/static/uploads')
+        os.makedirs(upload_folder, exist_ok=True)
+        file.save(os.path.join(upload_folder, filename))
+        url = f"/static/uploads/{filename}"
+        return {'url': url}, 201
