@@ -15,17 +15,14 @@ JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=7)
 
 SQLALCHEMY_DATABASE_URI = os.environ.get(
     "DATABASE_URL",
-    "mysql+pymysql://root:@localhost/citas_romanticas2",
+    "mysql+pymysql://root:@localhost/citas_romanticas",
 )
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 AUTH_ROLE_ADMIN = 'Admin'
 
 AUTH_ROLE_PUBLIC = 'Public'
-# Setup default language
 BABEL_DEFAULT_LOCALE = "en"
-# Your application default translation path
 BABEL_DEFAULT_FOLDER = "translations"
-# The allowed translation for you app
 LANGUAGES = {
     "en": {"flag": "gb", "name": "English"},
     "pt": {"flag": "pt", "name": "Portuguese"},

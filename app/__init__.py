@@ -264,7 +264,15 @@ def create_app() -> Flask:
     from .routes.cita_routes import ns as citas_ns
     from .routes.admin_citas_routes import ns as admin_citas_ns
     from .routes.ia_routes import ns as ia_ns
-    
+    from .routes.grupo_routes import ns as grupo_ns
+    from .routes.suscripcion_routes import ns as suscripcion_ns
+    from .routes.pago_routes import ns as pago_ns
+    from .routes.mensaje_routes import ns as mensaje_ns
+    from .routes.negocio_routes import ns as negocio_ns
+    from .routes.admin_routes import ns as admin_ns
+    from .routes.progreso_routes import ns as progreso_ns
+    from .routes.rol_routes import ns as rol_ns
+
     api.add_namespace(auth_ns, path="/auth")
     api.add_namespace(couples_ns, path="/couples")
     api.add_namespace(dates_ns, path="/dates")
@@ -275,7 +283,15 @@ def create_app() -> Flask:
     api.add_namespace(citas_ns, path="/citas")
     api.add_namespace(admin_citas_ns, path="/admin/citas")
     api.add_namespace(ia_ns, path="/ia")
-    
+    api.add_namespace(grupo_ns, path="/grupos")
+    api.add_namespace(suscripcion_ns, path="/suscripciones")
+    api.add_namespace(pago_ns, path="/pagos")
+    api.add_namespace(mensaje_ns, path="/mensajes")
+    api.add_namespace(negocio_ns, path="/negocios")
+    api.add_namespace(admin_ns, path="/admin")
+    api.add_namespace(progreso_ns, path="/progreso")
+    api.add_namespace(rol_ns, path="/roles")
+
     return app
 
 def _register_error_handlers(app: Flask) -> None:

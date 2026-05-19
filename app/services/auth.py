@@ -51,11 +51,14 @@ def _tokens(user: User) -> dict:
 
 
 def _user_dict(user: User) -> dict:
+    rol_nombre = user.rol.nombre if user.rol else None
     return {
-        "id": user.id,
-        "nombre": user.nombre,
-        "email": user.email,
-        "rol_id": user.rol_id,
-        "activo": user.activo,
-        "fecha_registro": user.fecha_registro.isoformat() if user.fecha_registro else None,
+        "id":         user.id,
+        "name":       user.nombre,
+        "email":      user.email,
+        "role":       "admin" if user.rol_id == 1 else "user",
+        "rol_id":     user.rol_id,
+        "rol_nombre": rol_nombre,
+        "is_active":  user.activo,
+        "created_at": user.fecha_registro.isoformat() if user.fecha_registro else None,
     }

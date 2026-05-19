@@ -11,19 +11,26 @@ mensaje_modelo = ns.model('Mensaje', {
     'mensaje': fields.String(required=True)
 })
 
+def _serializar_mensaje(m):
+    return {
+        'id': m.id,
+        'mensaje': m.mensaje,
+        'de_usuario_id': m.de_usuario_id,
+        'de_usuario': m.emisor.nombre if m.emisor else None,
+        'para_usuario_id': m.para_usuario_id,
+        'grupo_id': m.grupo_id,
+        'leido': m.leido,
+        'fecha': str(m.fecha),
+    }
+
 @ns.route('')
 class MensajesLista(Resource):
     @jwt_required()
     def get(self):
         usuario_id = get_jwt_identity()
         mensajes = MensajeService.obtener_mensajes_usuario(usuario_id)
-        return [{
-            'id': m.id,
-            'mensaje': m.mensaje,
-            'de_usuario': m.de_usuario.nombre,
-            'fecha': str(m.fecha)
-        } for m in mensajes], 200
-    
+        return [_serializar_mensaje(m) for m in mensajes], 200
+
     @jwt_required()
     @ns.expect(mensaje_modelo)
     def post(self):
@@ -37,9 +44,4 @@ class MensajesGrupo(Resource):
     @jwt_required()
     def get(self, grupo_id):
         mensajes = MensajeService.obtener_mensajes_grupo(grupo_id)
-        return [{
-            'id': m.id,
-            'mensaje': m.mensaje,
-            'de_usuario': m.de_usuario.nombre,
-            'fecha': str(m.fecha)
-        } for m in mensajes], 200
+        return [_serializar_mensaje(m) for m in mensajes], 200

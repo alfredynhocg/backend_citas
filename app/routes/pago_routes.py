@@ -14,7 +14,10 @@ class HistorialPagos(Resource):
         return [{
             'id': p.id,
             'monto': float(p.monto),
-            'plan': p.plan.nombre,
+            'plan': p.plan.nombre if p.plan else None,
             'estado': p.estado,
+            'tipo_periodo': p.tipo_periodo,
+            'metodo_pago': p.metodo_pago,
+            'comprobante_url': p.comprobante_url,
             'fecha_pago': str(p.fecha_pago)
         } for p in pagos], 200

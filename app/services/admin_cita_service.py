@@ -1,4 +1,7 @@
 from datetime import datetime
+import os
+import secrets
+from flask import current_app
 from ..models import db, Categoria, Negocio, Cita, FotoCita, Departamento, User
 from sqlalchemy import func
 

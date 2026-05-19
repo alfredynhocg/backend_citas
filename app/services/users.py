@@ -1,14 +1,14 @@
 from ..extensions import bcrypt, db
-from ..models import User
+from ..models import User, Role
 
-VALID_ROLES = {"admin", "couple", "guest"}
+VALID_ROLES = {1: "administrador", 2: "usuario_normal"}
 
 
-def list_users(page: int = 1, per_page: int = 20, role: str | None = None) -> dict:
+def list_users(page: int = 1, per_page: int = 20, rol_id: int | None = None) -> dict:
     q = User.query
-    if role:
-        q = q.filter_by(role=role)
-    pagination = q.order_by(User.created_at.desc()).paginate(
+    if rol_id:
+        q = q.filter_by(rol_id=rol_id)
+    pagination = q.order_by(User.fecha_registro.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
     return {
@@ -30,8 +30,8 @@ def get_user(user_id: int) -> User:
 def update_user(user_id: int, data: dict) -> User:
     user = get_user(user_id)
 
-    if "name" in data and data["name"]:
-        user.name = data["name"].strip()
+    if "nombre" in data and data["nombre"]:
+        user.nombre = data["nombre"].strip()
 
     if "email" in data and data["email"]:
         email = data["email"].lower().strip()
@@ -40,20 +40,24 @@ def update_user(user_id: int, data: dict) -> User:
             raise ValueError("El email ya está en uso")
         user.email = email
 
-    if "role" in data:
-        if data["role"] not in VALID_ROLES:
-            raise ValueError(f"Rol inválido. Opciones: {', '.join(VALID_ROLES)}")
-        user.role = data["role"]
+    if "rol_id" in data:
+        if data["rol_id"] not in VALID_ROLES:
+            raise ValueError(f"Rol inválido. Opciones: {list(VALID_ROLES.keys())}")
+        user.rol_id = data["rol_id"]
 
-    if "is_active" in data:
-        user.is_active = bool(data["is_active"])
+    if "activo" in data:
+        user.activo = bool(data["activo"])
 
     if "password" in data and data["password"]:
         if len(data["password"]) < 8:
             raise ValueError("La contraseña debe tener al menos 8 caracteres")
         user.password_hash = bcrypt.generate_password_hash(data["password"]).decode("utf-8")
 
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
     return user
 
 
@@ -61,16 +65,21 @@ def delete_user(user_id: int, requesting_user_id: int) -> None:
     if user_id == requesting_user_id:
         raise ValueError("No puedes eliminar tu propia cuenta")
     user = get_user(user_id)
-    db.session.delete(user)
-    db.session.commit()
+    try:
+        db.session.delete(user)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
 
 
 def _user_dict(user: User) -> dict:
     return {
-        "id":         user.id,
-        "name":       user.name,
-        "email":      user.email,
-        "role":       user.role,
-        "is_active":  user.is_active,
-        "created_at": user.created_at.isoformat(),
+        "id":             user.id,
+        "nombre":         user.nombre,
+        "email":          user.email,
+        "rol_id":         user.rol_id,
+        "rol":            user.rol.nombre if user.rol else None,
+        "activo":         user.activo,
+        "fecha_registro": user.fecha_registro.isoformat() if user.fecha_registro else None,
     }
