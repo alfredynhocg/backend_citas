@@ -1,4 +1,4 @@
-from flask_restx import Namespace, Resource, fields
+﻿from flask_restx import Namespace, Resource, fields
 from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..services.negocio_service import NegocioService
@@ -32,7 +32,7 @@ class NegocioLista(Resource):
     @jwt_required()
     @ns.expect(negocio_modelo)
     def post(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         data = request.get_json()
         negocio = NegocioService.crear_negocio(usuario_id, data)
         return {'id': negocio.id, 'nombre': negocio.nombre, 'mensaje': 'Negocio registrado pendiente de aprobacion'}, 201

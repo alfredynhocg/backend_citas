@@ -1,4 +1,4 @@
-from flask_restx import Namespace, Resource, fields
+﻿from flask_restx import Namespace, Resource, fields
 from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..services.progreso_service import ProgresoService
@@ -33,7 +33,7 @@ class CompletarCita(Resource):
     @jwt_required()
     @ns.expect(completar_modelo)
     def post(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         data = request.get_json()
         try:
             resultado = ProgresoService.completar_cita(usuario_id, data)
@@ -45,7 +45,7 @@ class CompletarCita(Resource):
 class MisRecuerdos(Resource):
     @jwt_required()
     def get(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         progresos = ProgresoService.obtener_progreso_usuario(usuario_id)
         completados = [p for p in progresos if p.completado]
         return [_serializar(p) for p in completados], 200
@@ -54,7 +54,7 @@ class MisRecuerdos(Resource):
 class Estadisticas(Resource):
     @jwt_required()
     def get(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         return ProgresoService.obtener_estadisticas(usuario_id), 200
 
 @ns.route('/grupo/<int:grupo_id>')

@@ -2,6 +2,7 @@ from flask_restx import Namespace, Resource, fields
 from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..services.grupo_service import GrupoService
+from ..models import Grupo, GrupoMiembro, User as Usuario
 
 ns = Namespace('grupos', description='Gestion de grupos y parejas')
 
@@ -18,7 +19,7 @@ invitar_modelo = ns.model('Invitar', {
 class GrupoLista(Resource):
     @jwt_required()
     def get(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         grupos = GrupoService.obtener_grupos_usuario(usuario_id)
         return [{
             'id': g.id,
@@ -26,11 +27,11 @@ class GrupoLista(Resource):
             'tipo': g.tipo,
             'codigo_invitacion': g.codigo_invitacion
         } for g in grupos], 200
-    
+
     @jwt_required()
     @ns.expect(grupo_modelo)
     def post(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         data = request.get_json()
         grupo = GrupoService.crear_grupo(usuario_id, data)
         return {
@@ -39,6 +40,30 @@ class GrupoLista(Resource):
             'tipo': grupo.tipo,
             'codigo_invitacion': grupo.codigo_invitacion
         }, 201
+
+@ns.route('/parejas')
+class ListaParejas(Resource):
+    @jwt_required()
+    def get(self):
+        grupos = Grupo.query.filter_by(tipo='pareja', activo=True).all()
+        resultado = []
+        for g in grupos:
+            miembros_q = (GrupoMiembro.query
+                .filter_by(grupo_id=g.id)
+                .join(Usuario, GrupoMiembro.usuario_id == Usuario.id)
+                .all())
+            miembros_data = [{'id': m.usuario_id, 'nombre': m.usuario.nombre, 'email': m.usuario.email}
+                             for m in miembros_q if m.usuario]
+            if len(miembros_data) == 2:
+                resultado.append({
+                    'id': g.id,
+                    'nombre': g.nombre,
+                    'codigo_invitacion': g.codigo_invitacion,
+                    'miembro1': miembros_data[0],
+                    'miembro2': miembros_data[1],
+                })
+        return resultado, 200
+
 
 @ns.route('/<int:grupo_id>')
 class GrupoDetalle(Resource):
@@ -74,7 +99,7 @@ class InvitarMiembro(Resource):
 class UnirGrupo(Resource):
     @jwt_required()
     def post(self, codigo):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         grupo = GrupoService.unir_grupo(codigo, usuario_id)
         if not grupo:
             return {'error': 'Codigo invalido'}, 404

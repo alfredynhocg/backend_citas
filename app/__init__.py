@@ -17,13 +17,11 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(messag
 def create_app() -> Flask:
     app = Flask(__name__)
     
-    # ============ CONFIGURACIÓN BÁSICA ============
     app.config.from_object("config")
     app.config['SECRET_KEY'] = 'clave-secreta-para-sesion-12345'
     
     os.makedirs(app.config["IMG_UPLOAD_FOLDER"], exist_ok=True)
     
-    # ============ INICIALIZAR EXTENSIONES ============
     db.init_app(app)
     bcrypt.init_app(app)
     jwt.init_app(app)
@@ -31,17 +29,15 @@ def create_app() -> Flask:
     from flask_babel import Babel
     app.config['BABEL_DEFAULT_LOCALE'] = 'es'
     babel = Babel(app)
-    # ============ ERROR HANDLERS ============
+
     _register_error_handlers(app)
     
-    # ============ CREAR TABLAS Y DATOS INICIALES ============
     with app.app_context():
         from . import models
         db.create_all()
         from .models import crear_roles_por_defecto
         crear_roles_por_defecto()
     
-    # ============ FLASK-ADMIN ============
     admin = Admin(app, name='Panel Admin Citas')
     from flask_admin.base import MenuLink
 
@@ -52,7 +48,7 @@ def create_app() -> Flask:
             url='/login'
         )
     )
-    # Importar modelos después de crear tablas
+
     from .models import User, Role, Categoria, Cita, Negocio, Departamento
     
     class AdminModelView(ModelView):
@@ -62,7 +58,6 @@ def create_app() -> Flask:
         def inaccessible_callback(self, name, **kwargs):
             return redirect('/login')
     
-    # Agregar vistas al admin
     admin.add_view(AdminModelView(User, db.session, name='Usuarios'))
     admin.add_view(AdminModelView(Role, db.session, name='Roles'))
     admin.add_view(AdminModelView(Categoria, db.session, name='Categorías'))
@@ -70,7 +65,6 @@ def create_app() -> Flask:
     admin.add_view(AdminModelView(Negocio, db.session, name='Negocios'))
     admin.add_view(AdminModelView(Departamento, db.session, name='Departamentos'))
     
-    # ============ RUTAS LOGIN/LOGOUT ============
     @app.route('/login', methods=['GET', 'POST'])
     def login_page():
         if request.method == 'POST':
@@ -166,7 +160,6 @@ def create_app() -> Flask:
         </html>
         '''
     
-    # ============ API REST ============
     api = Api(
         app,
         title="100 Citas Románticas en La Paz — API",
@@ -185,7 +178,6 @@ def create_app() -> Flask:
         security="Bearer",
     )
     
-    # ============ NAMESPACES ============
     from .routes.auth import ns as auth_ns
     from .routes.couples import ns as couples_ns
     from .routes.dates import ns as dates_ns
@@ -204,6 +196,9 @@ def create_app() -> Flask:
     from .routes.admin_routes import ns as admin_ns
     from .routes.progreso_routes import ns as progreso_ns
     from .routes.rol_routes import ns as rol_ns
+    from .routes.dashboard_routes import ns as dashboard_ns
+    from .routes.bot_routes import ns as bot_ns
+    from .routes.whatsapp_routes import ns as whatsapp_ns
 
     api.add_namespace(auth_ns, path="/auth")
     api.add_namespace(couples_ns, path="/couples")
@@ -223,6 +218,9 @@ def create_app() -> Flask:
     api.add_namespace(admin_ns, path="/admin")
     api.add_namespace(progreso_ns, path="/progreso")
     api.add_namespace(rol_ns, path="/roles")
+    api.add_namespace(dashboard_ns, path="/dashboard")
+    api.add_namespace(bot_ns, path="/bot")
+    api.add_namespace(whatsapp_ns, path="/whatsapp")
 
     return app
 

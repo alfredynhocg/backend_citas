@@ -1,4 +1,4 @@
-from flask_restx import Namespace, Resource, fields
+﻿from flask_restx import Namespace, Resource, fields
 from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..services.cita_service import CitaService
@@ -41,7 +41,7 @@ class CitaLista(Resource):
     @jwt_required()
     def get(self):
         """Obtener todas las citas disponibles para el usuario"""
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         departamento = request.args.get('departamento')
         categoria = request.args.get('categoria_id', type=int)
         citas = CitaService.obtener_citas_disponibles(usuario_id, departamento, categoria)
@@ -55,7 +55,7 @@ class CitaDetalle(Resource):
     @jwt_required()
     def get(self, cita_id):
         """Obtener detalle de una cita especifica"""
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         cita = CitaService.obtener_detalle_cita(usuario_id, cita_id)
         if not cita:
             return {'error': 'Cita no encontrada'}, 404
@@ -93,7 +93,7 @@ class CompletarCita(Resource):
     @ns.expect(completar_modelo)
     def post(self):
         """Marcar una cita como completada"""
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         data = request.get_json()
         
         resultado, status = CitaService.completar_cita(usuario_id, data)
@@ -105,7 +105,7 @@ class CalificarCita(Resource):
     @ns.expect(calificar_modelo)
     def post(self, cita_id):
         """Calificar una cita ya completada"""
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         data = request.get_json()
         
         resultado, status = CitaService.calificar_cita(usuario_id, cita_id, data)
@@ -116,7 +116,7 @@ class SubirFotosCita(Resource):
     @jwt_required()
     def post(self, cita_id):
         """Subir fotos de una cita completada"""
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         
         if 'fotos' not in request.files:
             return {'error': 'No se enviaron fotos'}, 400
@@ -130,7 +130,7 @@ class CitaAleatoria(Resource):
     @jwt_required()
     def get(self):
         """Obtener una cita aleatoria disponible"""
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         departamento = request.args.get('departamento')
         
         cita = CitaService.obtener_cita_aleatoria(usuario_id, departamento)
@@ -144,7 +144,7 @@ class CitasRecomendadas(Resource):
     @jwt_required()
     def get(self):
         """Obtener citas recomendadas basadas en el progreso"""
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         limit = request.args.get('limit', 5, type=int)
         
         citas = CitaService.obtener_citas_recomendadas(usuario_id, limit)
@@ -158,7 +158,7 @@ class MiProgresoCitas(Resource):
     @jwt_required()
     def get(self):
         """Obtener progreso de citas del usuario"""
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         
         progreso = CitaService.obtener_progreso_usuario(usuario_id)
         return progreso, 200
@@ -168,7 +168,7 @@ class GrupoProgresoCitas(Resource):
     @jwt_required()
     def get(self, grupo_id):
         """Obtener progreso de citas de un grupo"""
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         
         progreso = CitaService.obtener_progreso_grupo(usuario_id, grupo_id)
         if not progreso:

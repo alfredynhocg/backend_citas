@@ -1,0 +1,26 @@
+﻿from app import create_app
+from app.models import (Cita, Negocio, Pago, Progreso, Mensaje, Suscripcion,
+                        Grupo, GrupoMiembro, User, Categoria, Departamento,
+                        PlanSuscripcion, FotoCita)
+app = create_app()
+with app.app_context():
+    print("=== ESTADO BD ===")
+    print("Usuarios:     ", User.query.count())
+    print("Categorias:   ", Categoria.query.count())
+    print("Departamentos:", Departamento.query.count())
+    print("Planes:       ", PlanSuscripcion.query.count())
+    print("Citas:        ", Cita.query.count(), " activas=", Cita.query.filter_by(activo=True).count())
+    print("Negocios:     ", Negocio.query.count(), " activos=", Negocio.query.filter_by(activo=True).count())
+    print("Grupos:       ", Grupo.query.count())
+    print("GrupoMiembro: ", GrupoMiembro.query.count())
+    ind = Progreso.query.filter_by(tipo="individual").count()
+    grp = Progreso.query.filter_by(tipo="grupal").count()
+    print("Progreso:     ", Progreso.query.count(), " ind=", ind, " grp=", grp)
+    pend = Pago.query.filter_by(estado="pendiente").count()
+    apro = Pago.query.filter_by(estado="aprobado").count()
+    print("Pagos:        ", Pago.query.count(), " pendientes=", pend, " aprobados=", apro)
+    print("Suscripciones:", Suscripcion.query.count())
+    print("Mensajes:     ", Mensaje.query.count())
+    print("FotosCita:    ", FotoCita.query.count())
+    cn = Cita.query.filter(Cita.negocio_id != None).count()
+    print("Citas c/negocio:", cn)

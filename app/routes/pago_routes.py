@@ -1,4 +1,4 @@
-from flask_restx import Namespace, Resource, fields
+﻿from flask_restx import Namespace, Resource, fields
 from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..services.pago_service import PagoService
@@ -9,7 +9,7 @@ ns = Namespace('pagos', description='Gestion de pagos')
 class HistorialPagos(Resource):
     @jwt_required()
     def get(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         pagos = PagoService.obtener_historial_usuario(usuario_id)
         return [{
             'id': p.id,

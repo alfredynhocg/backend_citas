@@ -1,4 +1,4 @@
-from flask_restx import Namespace, Resource, fields
+﻿from flask_restx import Namespace, Resource, fields
 from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..services.mensaje_service import MensajeService
@@ -27,14 +27,14 @@ def _serializar_mensaje(m):
 class MensajesLista(Resource):
     @jwt_required()
     def get(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         mensajes = MensajeService.obtener_mensajes_usuario(usuario_id)
         return [_serializar_mensaje(m) for m in mensajes], 200
 
     @jwt_required()
     @ns.expect(mensaje_modelo)
     def post(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         data = request.get_json()
         mensaje = MensajeService.enviar_mensaje(usuario_id, data)
         return {'mensaje': 'Mensaje enviado', 'id': mensaje.id}, 201

@@ -321,3 +321,26 @@ Couple = Grupo
 CoupleDate = Progreso
 Date = Cita
 Memory = FotoCita
+
+# ── WhatsApp Bot ──────────────────────────────────────────────────────────────
+
+wa_conv_etiqueta = db.Table(
+    'wa_conv_etiqueta',
+    db.Column('conversacion_id', db.Integer, db.ForeignKey('wa_conversaciones.id'), primary_key=True),
+    db.Column('etiqueta_id',     db.Integer, db.ForeignKey('wa_etiquetas.id'),     primary_key=True),
+)
+
+class WaEtiqueta(db.Model):
+    __tablename__ = 'wa_etiquetas'
+    id     = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(60), nullable=False, unique=True)
+    color  = db.Column(db.String(20), nullable=False, default='#6366f1')
+
+class WaConversacion(db.Model):
+    __tablename__ = 'wa_conversaciones'
+    id         = db.Column(db.Integer, primary_key=True)
+    phone      = db.Column(db.String(40), nullable=False, unique=True)
+    nombre     = db.Column(db.String(100), nullable=True)
+    estado     = db.Column(db.String(40), nullable=False, default='menu')
+    updated_at = db.Column(db.DateTime, default=_now, onupdate=_now)
+    etiquetas  = db.relationship('WaEtiqueta', secondary=wa_conv_etiqueta, lazy='subquery')

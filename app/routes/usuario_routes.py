@@ -1,4 +1,4 @@
-# app/routes/usuario_routes.py
+﻿# app/routes/usuario_routes.py
 from flask_restx import Namespace, Resource, fields
 from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -60,7 +60,7 @@ class UsuarioLista(Resource):
     @jwt_required()
     def get(self):
         # Verificá manualmente si es admin
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         usuario = UsuarioService.obtener_por_id(usuario_id)
         if not usuario or usuario.rol_id != 1:
             return {'error': 'Acceso denegado. Se requieren permisos de administrador'}, 403
@@ -79,7 +79,7 @@ class UsuarioLista(Resource):
 class MiPerfil(Resource):
     @jwt_required()
     def get(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         return UsuarioService.obtener_perfil_completo(usuario_id), 200
 @ns.route('/<int:usuario_id>')
 class UsuarioDetalle(Resource):
@@ -130,7 +130,7 @@ class CambiarPassword(Resource):
     @jwt_required()
     @ns.expect(cambiar_password_modelo)
     def post(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         data = request.get_json()
         resultado = UsuarioService.cambiar_password(usuario_id, data)
         if resultado:
@@ -143,7 +143,7 @@ class CrearPareja(Resource):
     @jwt_required()
     @ns.expect(crear_pareja_modelo)
     def post(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         data = request.get_json()
         resultado = UsuarioService.crear_invitar_pareja(usuario_id, data)
         return resultado
@@ -154,7 +154,7 @@ class UnirPareja(Resource):
     @jwt_required()
     @ns.expect(elegir_pareja_modelo)
     def post(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         data = request.get_json()
         resultado = UsuarioService.unir_pareja(usuario_id, data['codigo_invitacion'])
         if resultado:
@@ -166,7 +166,7 @@ class UnirPareja(Resource):
 class MiPareja(Resource):
     @jwt_required()
     def get(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         pareja = UsuarioService.obtener_pareja(usuario_id)
         if not pareja:
             return {'mensaje': 'No tienes pareja vinculada'}, 404
@@ -189,7 +189,7 @@ class MiPareja(Resource):
 class DesvincularPareja(Resource):
     @jwt_required()
     def post(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         resultado = UsuarioService.desvincular_pareja(usuario_id)
         if resultado:
             return {'mensaje': 'Pareja desvinculada'}, 200
@@ -200,7 +200,7 @@ class DesvincularPareja(Resource):
 class MisSuscripciones(Resource):
     @jwt_required()
     def get(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         suscripciones = UsuarioService.obtener_suscripciones(usuario_id)
         suscripcion_activa = UsuarioService.obtener_suscripcion_activa(usuario_id)
         return {
@@ -226,7 +226,7 @@ class ContratarSuscripcion(Resource):
     @jwt_required()
     @ns.expect(suscripcion_modelo)
     def post(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         data = request.get_json()
         resultado = UsuarioService.contratar_suscripcion(usuario_id, data)
         return resultado
@@ -237,7 +237,7 @@ class RealizarPago(Resource):
     @jwt_required()
     @ns.expect(pago_modelo)
     def post(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         data = request.get_json()
         pago = UsuarioService.realizar_pago(usuario_id, data)
         if not pago:
@@ -254,7 +254,7 @@ class RealizarPago(Resource):
 class MisPagos(Resource):
     @jwt_required()
     def get(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         pagos = UsuarioService.obtener_pagos_usuario(usuario_id)
         return [{
             'id': p.id,
@@ -270,7 +270,7 @@ class MisPagos(Resource):
 class MiProgreso(Resource):
     @jwt_required()
     def get(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         progreso = UsuarioService.obtener_progreso_completo(usuario_id)
         return {
             'estadisticas': {
@@ -295,7 +295,7 @@ class MiProgreso(Resource):
 class MisCertificados(Resource):
     @jwt_required()
     def get(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         certificados = UsuarioService.obtener_certificados(usuario_id)
         return [{
             'id': c.id,
@@ -309,7 +309,7 @@ class MisCertificados(Resource):
 class VerificarEmail(Resource):
     @jwt_required()
     def post(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         resultado = UsuarioService.enviar_codigo_verificacion(usuario_id)
         if resultado:
             return {'mensaje': 'Codigo enviado a tu email'}, 200
@@ -321,7 +321,7 @@ class ConfirmarEmail(Resource):
     @jwt_required()
     @ns.expect(verificar_email_modelo)
     def post(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         data = request.get_json()
         resultado = UsuarioService.verificar_email(usuario_id, data['codigo'])
         if resultado:
@@ -333,7 +333,7 @@ class ConfirmarEmail(Resource):
 class DepartamentosDisponibles(Resource):
     @jwt_required()
     def get(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         departamentos = UsuarioService.obtener_departamentos_desbloqueados(usuario_id)
         return {
             'departamento_actual': UsuarioService.obtener_departamento_actual(usuario_id),
@@ -347,7 +347,7 @@ class CambiarDepartamento(Resource):
     @jwt_required()
     @ns.expect(cambiar_departamento_modelo)
     def post(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         data = request.get_json()
         resultado = UsuarioService.cambiar_departamento_actual(usuario_id, data['departamento'])
         if resultado:

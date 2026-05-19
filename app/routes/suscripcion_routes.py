@@ -1,4 +1,4 @@
-import os
+﻿import os
 import secrets
 from flask_restx import Namespace, Resource, fields
 from flask import request, current_app
@@ -34,7 +34,7 @@ class CrearPago(Resource):
     @jwt_required()
     @ns.expect(pago_modelo)
     def post(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         data = request.get_json()
         pago = SuscripcionService.crear_pago(usuario_id, data)
         return {
@@ -48,7 +48,7 @@ class CrearPago(Resource):
 class MisSuscripciones(Resource):
     @jwt_required()
     def get(self):
-        usuario_id = get_jwt_identity()
+        usuario_id = int(get_jwt_identity())
         suscripciones = SuscripcionService.obtener_suscripciones_usuario(usuario_id)
         return [{
             'id': s.id,

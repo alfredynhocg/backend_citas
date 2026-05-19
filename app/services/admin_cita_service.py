@@ -260,6 +260,74 @@ class AdminCitaService:
     # ==================== CITAS ====================
 
     @staticmethod
+    def obtener_todas_citas():
+        citas = Cita.query.order_by(Cita.id.desc()).all()
+        return [{
+            'id': c.id,
+            'nombre': c.nombre,
+            'descripcion': c.descripcion,
+            'categoria_id': c.categoria_id,
+            'categoria_nombre': c.categoria.nombre if c.categoria else None,
+            'departamento_id': c.departamento_id,
+            'departamento_nombre': c.departamento.nombre if c.departamento else None,
+            'negocio_id': c.negocio_id,
+            'negocio_nombre': c.negocio.nombre if c.negocio else None,
+            'direccion': c.direccion,
+            'latitud': float(c.latitud) if c.latitud else None,
+            'longitud': float(c.longitud) if c.longitud else None,
+            'puntos': c.puntos,
+            'portada_url': c.portada_url,
+            'activo': c.activo,
+        } for c in citas]
+
+    @staticmethod
+    def obtener_cita_por_id(cita_id):
+        c = Cita.query.get(cita_id)
+        if not c:
+            return None
+        return {
+            'id': c.id,
+            'nombre': c.nombre,
+            'descripcion': c.descripcion,
+            'categoria_id': c.categoria_id,
+            'categoria_nombre': c.categoria.nombre if c.categoria else None,
+            'departamento_id': c.departamento_id,
+            'departamento_nombre': c.departamento.nombre if c.departamento else None,
+            'negocio_id': c.negocio_id,
+            'negocio_nombre': c.negocio.nombre if c.negocio else None,
+            'direccion': c.direccion,
+            'latitud': float(c.latitud) if c.latitud else None,
+            'longitud': float(c.longitud) if c.longitud else None,
+            'puntos': c.puntos,
+            'portada_url': c.portada_url,
+            'activo': c.activo,
+        }
+
+    @staticmethod
+    def obtener_fotos_cita(cita_id):
+        fotos = FotoCita.query.filter_by(cita_id=cita_id).all()
+        return [{'id': f.id, 'url': f.url, 'descripcion': f.descripcion} for f in fotos]
+
+    @staticmethod
+    def agregar_foto_cita(cita_id, data):
+        cita = Cita.query.get(cita_id)
+        if not cita:
+            return {'error': 'Cita no encontrada'}, 404
+        foto = FotoCita(cita_id=cita_id, url=data.get('url'), descripcion=data.get('descripcion'))
+        db.session.add(foto)
+        db.session.commit()
+        return {'id': foto.id, 'url': foto.url}
+
+    @staticmethod
+    def eliminar_foto(foto_id):
+        foto = FotoCita.query.get(foto_id)
+        if not foto:
+            return {'error': 'Foto no encontrada'}, 404
+        db.session.delete(foto)
+        db.session.commit()
+        return {'mensaje': 'Foto eliminada'}
+
+    @staticmethod
     def crear_cita(data):
         nombre = data.get('nombre', '').strip()
         if not nombre:
