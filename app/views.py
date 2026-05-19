@@ -1,62 +1,45 @@
-from flask import redirect, session
+from flask import session, redirect
+from flask_admin.base import MenuLink, BaseView, expose
+from flask_admin.contrib.sqla import ModelView
 
-from flask_appbuilder import ModelView, BaseView, expose
-from flask_appbuilder.models.sqla.interface import SQLAInterface
-
-from .extensions import appbuilder
-from .models import User, Cita
-
-
-class UserModelView(ModelView):
-    datamodel = SQLAInterface(User)
-
-    list_columns = [
-        "id",
-        "nombre",
-        "email",
-        "activo"
-    ]
+from .extensions import db
+from .models import User, Role, Categoria, Cita, Negocio, Departamento
 
 
-class CitaModelView(ModelView):
-    datamodel = SQLAInterface(Cita)
-
-    list_columns = [
-        "id",
-        "nombre",
-        "puntos"
-    ]
+class LoginMenuLink(MenuLink):
+    def is_accessible(self):
+        return not session.get('admin_logged_in', False)
 
 
-class LoginButtonView(BaseView):
-
-    route_base = "/"
-
-    @expose("/admin-login/")
-    def admin_login(self):
-        if session.get("admin_logged_in"):
-            return redirect("/admin")
-
-        return redirect("/login")
+class LogoutMenuLink(MenuLink):
+    def is_accessible(self):
+        return session.get('admin_logged_in', False)
 
 
-appbuilder.add_link(
-    "Iniciar Sesión",
-    href="/login",
-    icon="fa-sign-in",
-    category=""
-)
+class AdminModelView(ModelView):
+    def is_accessible(self):
+        return session.get('admin_logged_in', False)
 
-appbuilder.add_view(
-    UserModelView,
-    "Usuarios",
-    icon="fa-users",
-    category="Seguridad"
-)
+    def inaccessible_callback(self, name, **kwargs):
+        return redirect('/login')
 
-appbuilder.add_view(
-    CitaModelView,
-    "Citas",
-    icon="fa-calendar",
-    category="Contenido"
-)
+
+class ReportesView(BaseView):
+    @expose('/')
+    def index(self):
+        return self.render('admin/reportes.html')
+
+
+def register_admin_views(admin):
+
+    admin.add_link(LoginMenuLink(name='Iniciar', url='/login'))
+    admin.add_link(LogoutMenuLink(name='Finalizar', url='/logout'))
+
+    admin.add_view(AdminModelView(User, db.session, name='Usuarios'))
+    admin.add_view(AdminModelView(Role, db.session, name='Roles'))
+    admin.add_view(AdminModelView(Categoria, db.session, name='Categorías'))
+    admin.add_view(AdminModelView(Cita, db.session, name='Citas'))
+    admin.add_view(AdminModelView(Negocio, db.session, name='Negocios'))
+    admin.add_view(AdminModelView(Departamento, db.session, name='Departamentos'))
+
+    admin.add_view(ReportesView(name='Reportes', endpoint='reportes'))
