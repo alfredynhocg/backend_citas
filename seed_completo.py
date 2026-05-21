@@ -8,9 +8,9 @@ Ejecutar: ./env/Scripts/python seed_completo.py
 from app import create_app
 from app.extensions import db
 from app.models import (
-    User, Cita, Categoria, Departamento, Negocio,
+    User, Cita, Categoria, Departamento, Negocio, FotoNegocio,
     Grupo, GrupoMiembro, Progreso, Pago, PlanSuscripcion,
-    Suscripcion, Mensaje, FotoCita
+    Suscripcion, Mensaje, FotoCita, Certificado
 )
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
@@ -293,8 +293,101 @@ with app.app_context():
     db.session.commit()
     print(f"   +{fotos_nuevas} fotos de cita")
 
-    # ── 7. CITAS — verificar que admin/citas las vea todas ────────────────────
-    print("\n[7] Verificando citas para admin/citas...")
+    # ── 7. NEGOCIOS ───────────────────────────────────────────────────────────
+    print("\n[7] Negocios...")
+    departs = {d.nombre: d for d in Departamento.query.all()}
+    dep_lp  = departs.get("La Paz")
+
+    NEGOCIOS_DATA = [
+        ("Café del Prado",        "Av. 16 de Julio 1490, La Paz",   "restaurante",  -16.4955, -68.1336),
+        ("Teleférico La Paz",     "Estación Central, La Paz",        "aventura",     -16.5000, -68.1193),
+        ("Valle de la Luna",      "Muela del Diablo, La Paz",        "naturaleza",   -16.5762, -68.0762),
+        ("Spa Andes Relax",       "Calle Loayza 233, La Paz",        "bienestar",    -16.4955, -68.1336),
+        ("Galería de Arte TAM",   "Calle Sagárnaga 78, La Paz",      "cultura",      -16.4960, -68.1350),
+        ("Paintball La Paz",      "Av. Hernando Siles, La Paz",      "aventura",     -16.5100, -68.1100),
+        ("Killi Killi Mirador",   "Mirador Killi Killi, La Paz",     "naturaleza",   -16.4890, -68.1270),
+        ("Restaurant Gustu",      "Calle 10 de Calacoto 300",        "restaurante",  -16.5310, -68.0760),
+        ("Kuska Spa",             "Av. Sánchez Lima 2234, La Paz",   "bienestar",    -16.5020, -68.1180),
+        ("Tiwanaku Ruins Tour",   "Tiwanaku, 70km de La Paz",        "cultura",      -16.5554, -68.6736),
+        ("Mercado de Brujas",     "Calle Linares, La Paz",           "cultura",      -16.4955, -68.1380),
+        ("Cine Center La Paz",    "Av. Arce 2799, La Paz",           "entretenimiento", -16.5072, -68.1172),
+    ]
+
+    admin_u2 = User.query.filter_by(email="admin@citas.bo").first()
+    negocios_existentes = {n.nombre for n in Negocio.query.all()}
+    negocios_nuevos = 0
+    negocios_creados = []
+
+    for nombre, direccion, cat, lat, lng in NEGOCIOS_DATA:
+        if nombre in negocios_existentes:
+            continue
+        n = Negocio(
+            nombre=nombre, direccion=direccion,
+            categoria_negocio=cat, latitud=lat, longitud=lng,
+            departamento_id=dep_lp.id if dep_lp else None,
+            activo=True, admin_id=admin_u2.id if admin_u2 else None,
+        )
+        db.session.add(n)
+        negocios_creados.append((nombre, n))
+        negocios_nuevos += 1
+
+    db.session.flush()
+
+    for nombre, n in negocios_creados:
+        db.session.add(FotoNegocio(
+            negocio_id=n.id,
+            url=f"/uploads/negocios/{nombre.lower().replace(' ', '_')}.jpg",
+            descripcion=f"Foto principal de {nombre}",
+        ))
+
+    db.session.commit()
+    print(f"   +{negocios_nuevos} negocios creados")
+
+    # Vincular algunos negocios a citas
+    citas_db2 = Cita.query.filter(Cita.negocio_id.is_(None)).limit(12).all()
+    negocios_db = Negocio.query.filter_by(activo=True).all()
+    citas_actualizadas = 0
+    for i, cita in enumerate(citas_db2):
+        cita.negocio_id = negocios_db[i % len(negocios_db)].id
+        citas_actualizadas += 1
+    db.session.commit()
+    print(f"   {citas_actualizadas} citas vinculadas a negocios")
+
+    # ── 8. CERTIFICADOS ───────────────────────────────────────────────────────
+    print("\n[8] Certificados...")
+    cert_nuevos = 0
+    grupos_db = Grupo.query.filter_by(tipo="pareja", activo=True).all()
+    niveles = ["bronce", "plata", "oro"]
+
+    for i, grupo in enumerate(grupos_db):
+        for j, nivel in enumerate(niveles[:2]):
+            existe = Certificado.query.filter_by(grupo_id=grupo.id, nivel=nivel).first()
+            if not existe:
+                db.session.add(Certificado(
+                    grupo_id=grupo.id,
+                    nivel=nivel,
+                    fecha=_ago(days=(60 - i * 10 - j * 15)),
+                    pdf_url=f"/certificados/grupo_{grupo.id}_{nivel}.pdf",
+                ))
+                cert_nuevos += 1
+
+    if carlos:
+        for nivel in ["bronce"]:
+            existe = Certificado.query.filter_by(usuario_id=carlos.id, nivel=nivel).first()
+            if not existe:
+                db.session.add(Certificado(
+                    usuario_id=carlos.id,
+                    nivel=nivel,
+                    fecha=_ago(days=45),
+                    pdf_url=f"/certificados/usuario_{carlos.id}_{nivel}.pdf",
+                ))
+                cert_nuevos += 1
+
+    db.session.commit()
+    print(f"   +{cert_nuevos} certificados creados")
+
+    # ── 9. CITAS — verificar que admin/citas las vea todas ────────────────────
+    print("\n[9] Verificando citas para admin/citas...")
     total_citas = Cita.query.count()
     activas     = Cita.query.filter_by(activo=True).count()
     con_negocio = Cita.query.filter(Cita.negocio_id.isnot(None)).count()
@@ -321,16 +414,18 @@ with app.app_context():
     print(f"  Suscripciones: {Suscripcion.query.count()}")
     print(f"  Mensajes:      {Mensaje.query.count()}")
     print(f"  FotosCita:     {FotoCita.query.count()}")
+    print(f"  Certificados:  {Certificado.query.count()}")
     print()
     print("Modulos listos:")
     print("  /dashboard      -> graficas con datos reales")
     print("  /catalogo       -> 100 citas")
     print("  /recuerdos      -> 60+ recuerdos con anecdotas")
-    print("  /grupos         -> 11 grupos (login con carlos/sofia/diego/valentina)")
+    print("  /grupos         -> grupos con miembros y mensajes")
     print("  /parejas        -> 2 parejas vinculadas")
-    print("  /mensajes       -> 6+ mensajes por grupo")
+    print("  /mensajes       -> mensajes entre usuarios")
     print("  /suscripciones  -> pagos y planes activos")
+    print("  /certificados   -> certificados por nivel")
     print("  /admin/citas    -> 100 citas gestionables")
-    print("  /admin/negocios -> 12 negocios")
-    print("  /admin/pagos    -> 9+ pagos (pendientes/aprobados/rechazados)")
-    print("  /users/list     -> 5 usuarios")
+    print("  /admin/negocios -> 12 negocios con fotos")
+    print("  /admin/pagos    -> pagos (pendientes/aprobados/rechazados)")
+    print("  /users/list     -> usuarios")

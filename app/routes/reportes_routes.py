@@ -66,12 +66,14 @@ Responde SOLO con este JSON (sin markdown):
         ia = IAService.consultar_ia(prompt)
         analisis = {}
         if ia.get('success'):
-            import json as _j
+            import json as _j, re as _re
             try:
                 txt = ia['respuesta'].strip()
                 if '```' in txt:
                     txt = txt.split('```')[1]
                     if txt.startswith('json'): txt = txt[4:]
+                m = _re.search(r'\{.*\}', txt, _re.DOTALL)
+                if m: txt = m.group()
                 analisis = _j.loads(txt)
             except Exception:
                 analisis = {'resumen': ia['respuesta'], 'punto_fuerte': '', 'punto_debil': '', 'conclusion': ''}
@@ -169,12 +171,14 @@ Responde SOLO con este JSON (sin markdown):
         ia = IAService.consultar_ia(prompt)
         analisis = {}
         if ia.get('success'):
-            import json as _j
+            import json as _j, re as _re
             try:
                 txt = ia['respuesta'].strip()
                 if '```' in txt:
                     txt = txt.split('```')[1]
                     if txt.startswith('json'): txt = txt[4:]
+                m = _re.search(r'\{.*\}', txt, _re.DOTALL)
+                if m: txt = m.group()
                 analisis = _j.loads(txt)
             except Exception:
                 analisis = {'tendencia_general': ia['respuesta'], 'categoria_en_auge': '', 'alerta': '', 'recomendacion': ''}
@@ -263,12 +267,14 @@ Responde SOLO con este JSON (sin markdown):
         ia = IAService.consultar_ia(prompt)
         analisis = {}
         if ia.get('success'):
-            import json as _j
+            import json as _j, re as _re
             try:
                 txt = ia['respuesta'].strip()
                 if '```' in txt:
                     txt = txt.split('```')[1]
                     if txt.startswith('json'): txt = txt[4:]
+                m = _re.search(r'\{.*\}', txt, _re.DOTALL)
+                if m: txt = m.group()
                 analisis = _j.loads(txt)
             except Exception:
                 analisis = {'prediccion': ia['respuesta'], 'riesgo_principal': '', 'recomendaciones': [], 'oportunidad': ''}

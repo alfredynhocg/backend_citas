@@ -301,9 +301,10 @@ with app.app_context():
     citas_db = Cita.query.order_by(Cita.id).all()
 
     # 6. Usuarios
-    if User.query.count() == 0:
-        usuarios_creados = []
-        for u in USUARIOS:
+    emails_existentes = {u.email for u in User.query.all()}
+    usuarios_creados = []
+    for u in USUARIOS:
+        if u["email"] not in emails_existentes:
             nuevo = User(
                 nombre=u["nombre"],
                 email=u["email"],
@@ -314,10 +315,11 @@ with app.app_context():
             )
             db.session.add(nuevo)
             usuarios_creados.append(nuevo)
+    if usuarios_creados:
         db.session.commit()
         print(f"✓ {len(usuarios_creados)} usuarios creados")
     else:
-        print("- Usuarios ya existen")
+        print("- Usuarios seed ya existen")
     usuarios_db = User.query.order_by(User.id).all()
 
     # A partir de aquí usamos los usuarios normales (índice 1 en adelante)
@@ -327,7 +329,8 @@ with app.app_context():
     user_valentina = next((u for u in usuarios_db if u.email == "valentina@citas.bo"), None)
 
     # 7. Grupos
-    if Grupo.query.count() == 0 and user_carlos and user_sofia:
+    codigos_existentes = {g.codigo_invitacion for g in Grupo.query.all()}
+    if "CARSOFI1" not in codigos_existentes and user_carlos and user_sofia:
         g1 = Grupo(
             nombre="Carlos & Sofía",
             tipo="pareja",
@@ -366,7 +369,8 @@ with app.app_context():
         print("- Grupos ya existen o faltan usuarios")
 
     # 8. Progreso / Recuerdos (Carlos completó 12 citas, Diego 5)
-    if Progreso.query.count() == 0 and user_carlos and citas_db:
+    prog_carlos_existe = user_carlos and Progreso.query.filter_by(usuario_id=user_carlos.id).count() > 0
+    if not prog_carlos_existe and user_carlos and citas_db:
         progresos = []
         for i, cita in enumerate(citas_db[:12]):
             dias_atras = (12 - i) * 7
@@ -402,7 +406,8 @@ with app.app_context():
         print("- Progreso ya existe o faltan datos")
 
     # 9. Mensajes de ejemplo
-    if Mensaje.query.count() == 0 and user_carlos and user_sofia:
+    msgs_existen = user_carlos and Mensaje.query.filter_by(de_usuario_id=user_carlos.id).count() > 0
+    if not msgs_existen and user_carlos and user_sofia:
         msgs = [
             Mensaje(de_usuario_id=user_carlos.id, para_usuario_id=user_sofia.id,
                     mensaje="¿Cuándo hacemos la próxima cita? 😍", leido=True,  fecha=_now() - timedelta(hours=5)),
@@ -418,7 +423,8 @@ with app.app_context():
         print("- Mensajes ya existen")
 
     # 10. Suscripciones
-    if Suscripcion.query.count() == 0 and user_carlos:
+    sub_carlos_existe = user_carlos and Suscripcion.query.filter_by(usuario_id=user_carlos.id).count() > 0
+    if not sub_carlos_existe and user_carlos:
         plan_pareja = PlanSuscripcion.query.filter_by(codigo="pareja").first()
         if plan_pareja:
             sus = Suscripcion(
