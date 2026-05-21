@@ -9,7 +9,7 @@ from ..models import User
 def register_user(name: str, email: str, password: str) -> dict:
     if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
         raise ValueError("Email inválido")
-    if len(password) < 4:
+    if len(password) < 8:
         raise ValueError("La contraseña debe tener al menos 8 caracteres")
     if User.query.filter_by(email=email).first():
         raise ValueError("El email ya está registrado")

@@ -1,7 +1,6 @@
 from datetime import date
 
 from ..extensions import db
-# En app/services/couples.py
 from ..models import Categoria as Category, Grupo as Couple, Progreso as CoupleDate, Cita as Date, User
 def _get_couple_for_user(user_id: int) -> Couple:
     couple = Couple.query.filter(

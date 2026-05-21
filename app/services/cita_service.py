@@ -15,19 +15,15 @@ class CitaService:
         if not usuario:
             return []
         
-        # Obtener departamentos desbloqueados
         departamentos_desbloqueados = CitaService._obtener_departamentos_desbloqueados(usuario_id)
         
-        # Query base
         query = Cita.query.filter(Cita.activo == True)
         
-        # Filtrar por departamento
         if departamento:
             query = query.join(Departamento).filter(Departamento.nombre == departamento)
         else:
             query = query.filter(Cita.departamento_id.in_(departamentos_desbloqueados))
         
-        # Filtrar por categoria
         if categoria_id:
             query = query.filter(Cita.categoria_id == categoria_id)
         
@@ -55,16 +51,13 @@ class CitaService:
         if not cita:
             return None
         
-        # Contar cuantas personas han completado esta cita
         completados = Progreso.query.filter_by(cita_id=cita_id, completado=True).count()
         
-        # Calificacion promedio
         promedio = db.session.query(func.avg(Progreso.calificacion)).filter(
             Progreso.cita_id == cita_id, 
             Progreso.calificacion.isnot(None)
         ).scalar() or 0
         
-        # Fotos de la cita
         fotos = FotoCita.query.filter_by(cita_id=cita_id).limit(10).all()
         
         return {
@@ -89,7 +82,6 @@ class CitaService:
 
     @staticmethod
     def verificar_acceso_cita(usuario_id, cita_id):
-        """Verificar si un usuario tiene acceso a una cita"""
         cita = Cita.query.get(cita_id)
         if not cita:
             return False
@@ -97,11 +89,9 @@ class CitaService:
         if not cita.departamento:
             return True
         
-        # Departamentos gratis (orden 1-3)
         if cita.departamento.orden_desbloqueo <= 3:
             return True
         
-        # Departamentos premium
         departamentos_desbloqueados = CitaService._obtener_departamentos_desbloqueados(usuario_id)
         return cita.departamento_id in departamentos_desbloqueados
 
@@ -110,7 +100,6 @@ class CitaService:
         """Obtener IDs de departamentos desbloqueados por el usuario"""
         departamentos_ids = [1, 2, 3]  # La Paz, Cochabamba, Santa Cruz (gratis)
         
-        # Verificar suscripciones individuales
         suscripciones_individual = Suscripcion.query.filter(
             Suscripcion.usuario_id == usuario_id,
             Suscripcion.activo == True,
@@ -119,10 +108,8 @@ class CitaService:
         
         for suscripcion in suscripciones_individual:
             if suscripcion.plan:
-                # Aquí iría la lógica de cuántos departamentos desbloquea
                 pass
         
-        # Verificar suscripciones grupales
         grupos = GrupoMiembro.query.filter_by(usuario_id=usuario_id).all()
         for grupo in grupos:
             suscripciones_grupo = Suscripcion.query.filter(
@@ -138,7 +125,6 @@ class CitaService:
 
     @staticmethod
     def obtener_categorias():
-        """Obtener todas las categorias"""
         categorias = Categoria.query.all()
         return [{
             'id': c.id,
@@ -148,7 +134,6 @@ class CitaService:
 
     @staticmethod
     def obtener_departamentos():
-        """Obtener todos los departamentos"""
         departamentos = Departamento.query.order_by(Departamento.orden_desbloqueo).all()
         return [{
             'id': d.id,
@@ -167,17 +152,14 @@ class CitaService:
         if not cita:
             return {'error': 'Cita no encontrada'}, 404
         
-        # Verificar acceso
         if not CitaService.verificar_acceso_cita(usuario_id, cita_id):
             return {'error': 'No tienes acceso a esta cita'}, 403
         
         if grupo_id:
-            # Verificar que el usuario pertenece al grupo
             es_miembro = GrupoMiembro.query.filter_by(grupo_id=grupo_id, usuario_id=usuario_id).first()
             if not es_miembro:
                 return {'error': 'No perteneces a este grupo'}, 403
             
-            # Verificar si ya fue completada por el grupo
             existente = Progreso.query.filter_by(
                 grupo_id=grupo_id, 
                 cita_id=cita_id, 
@@ -200,7 +182,6 @@ class CitaService:
                 existente.completado = True
                 existente.fecha_completado = datetime.now()
         else:
-            # Progreso individual
             existente = Progreso.query.filter_by(
                 usuario_id=usuario_id, 
                 cita_id=cita_id, 
@@ -299,7 +280,6 @@ class CitaService:
 
     @staticmethod
     def obtener_cita_aleatoria(usuario_id, departamento=None):
-        """Obtener una cita aleatoria disponible"""
         departamentos_desbloqueados = CitaService._obtener_departamentos_desbloqueados(usuario_id)
         
         query = Cita.query.filter(Cita.activo == True)
@@ -309,7 +289,6 @@ class CitaService:
         else:
             query = query.filter(Cita.departamento_id.in_(departamentos_desbloqueados))
         
-        # Excluir citas ya completadas
         completadas = db.session.query(Progreso.cita_id).filter(
             or_(
                 and_(Progreso.tipo == 'individual', Progreso.usuario_id == usuario_id),
@@ -338,8 +317,6 @@ class CitaService:
 
     @staticmethod
     def obtener_citas_recomendadas(usuario_id, limit=5):
-        """Obtener citas recomendadas basadas en categorias favoritas"""
-        # Obtener categorias mas completadas por el usuario
         categorias_populares = db.session.query(
             Progreso.cita_id,
             func.count(Progreso.id).label('total')
@@ -353,7 +330,6 @@ class CitaService:
             Progreso.completado == True
         ).group_by(Progreso.cita_id).order_by(func.count(Progreso.id).desc()).limit(limit).all()
         
-        # Por ahora, devolver citas aleatorias
         return CitaService.obtener_citas_disponibles(usuario_id, limit=limit)
 
     @staticmethod
@@ -377,7 +353,6 @@ class CitaService:
         
         total_completadas = completadas_individual + completadas_grupal
         
-        # Citas por categoria
         por_categoria = db.session.query(
             Categoria.nombre,
             func.count(Progreso.id).label('completadas')
@@ -403,7 +378,6 @@ class CitaService:
 
     @staticmethod
     def obtener_progreso_grupo(usuario_id, grupo_id):
-        """Obtener progreso de citas de un grupo"""
         es_miembro = GrupoMiembro.query.filter_by(grupo_id=grupo_id, usuario_id=usuario_id).first()
         if not es_miembro:
             return None

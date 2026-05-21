@@ -19,7 +19,7 @@ def create_app() -> Flask:
     app = Flask(__name__)
     
     app.config.from_object("config")
-    app.config['SECRET_KEY'] = 'clave-secreta-para-sesion-12345'
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'cambia-esto-en-produccion')
     
     os.makedirs(app.config["IMG_UPLOAD_FOLDER"], exist_ok=True)
     
@@ -85,8 +85,11 @@ def create_app() -> Flask:
             username = request.form.get('username')
             password = request.form.get('password')
 
-            # 🔥 USUARIO Y PASSWORD HARDCODEADO (puedes cambiar luego a BD)
-            if username == 'admin' and password == 'admin123':
+            admin_user = os.environ.get('ADMIN_USERNAME', 'admin')
+            admin_pass = os.environ.get('ADMIN_PASSWORD', '')
+            if not admin_pass:
+                return 'Error: ADMIN_PASSWORD no configurado en variables de entorno.', 500
+            if username == admin_user and password == admin_pass:
                 session['admin_logged_in'] = True
                 session['admin_user'] = username
                 return redirect('/admin')
@@ -166,12 +169,12 @@ def create_app() -> Flask:
 
                     <div class="mb-3">
                         <label>Usuario</label>
-                        <input type="text" name="username" class="form-control" placeholder="admin" required>
+                        <input type="text" name="username" class="form-control" placeholder="Usuario" required>
                     </div>
 
                     <div class="mb-3">
                         <label>Contraseña</label>
-                        <input type="password" name="password" class="form-control" placeholder="admin123" required>
+                        <input type="password" name="password" class="form-control" placeholder="Contraseña" required>
                     </div>
 
                     <button type="submit" class="btn btn-primary btn-login">
@@ -179,9 +182,6 @@ def create_app() -> Flask:
                     </button>
 
                 </form>
-
-                <hr>
-                <small class="text-muted">Usuario: admin | Password: admin123</small>
             </div>
 
         </body>
@@ -249,6 +249,8 @@ def create_app() -> Flask:
     from .routes.dashboard_routes import ns as dashboard_ns
     from .routes.bot_routes import ns as bot_ns
     from .routes.whatsapp_routes import ns as whatsapp_ns
+    from .routes.cuadernillo_routes import ns as cuadernillo_ns
+    from .routes.reportes_routes import ns as reportes_ns
 
     api.add_namespace(auth_ns, path="/auth")
     api.add_namespace(couples_ns, path="/couples")
@@ -271,6 +273,8 @@ def create_app() -> Flask:
     api.add_namespace(dashboard_ns, path="/dashboard")
     api.add_namespace(bot_ns, path="/bot")
     api.add_namespace(whatsapp_ns, path="/whatsapp")
+    api.add_namespace(cuadernillo_ns, path="/cuadernillo")
+    api.add_namespace(reportes_ns, path="/reportes")
 
     return app
 

@@ -1,6 +1,6 @@
 from flask_restx import Namespace, Resource
 from flask import request
-from ..models import db, Categoria, Cita, Negocio, Departamento, Grupo, GrupoMiembro, User
+from ..models import db, Categoria, Cita, Negocio, Departamento, Grupo, GrupoMiembro, User, PlanSuscripcion
 from ..services.suscripcion_service import SuscripcionService
 from sqlalchemy import func
 
@@ -96,27 +96,17 @@ class BotEstadisticas(Resource):
 class BotPlanes(Resource):
     def get(self):
         """Planes de suscripcion disponibles"""
-        try:
-            from ..models import Plan
-            planes = Plan.query.filter_by(activo=True).all()
-            return {
-                'planes': [{
-                    'id': p.id,
-                    'nombre': p.nombre,
-                    'descripcion': p.descripcion if hasattr(p, 'descripcion') else None,
-                    'precio_mensual': float(p.precio_mensual) if p.precio_mensual else 0,
-                    'precio_anual': float(p.precio_anual) if hasattr(p, 'precio_anual') and p.precio_anual else 0,
-                    'ventajas': p.ventajas if hasattr(p, 'ventajas') else None,
-                } for p in planes]
-            }, 200
-        except Exception:
-            return {
-                'planes': [
-                    {'nombre': 'Free', 'descripcion': 'Acceso basico', 'precio_mensual': 0, 'precio_anual': 0},
-                    {'nombre': 'Pareja', 'descripcion': 'Para parejas', 'precio_mensual': 29, 'precio_anual': 290},
-                    {'nombre': 'Aventureros', 'descripcion': 'Para grupos', 'precio_mensual': 59, 'precio_anual': 590},
-                ]
-            }, 200
+        planes = PlanSuscripcion.query.filter_by(activo=True).all()
+        return {
+            'planes': [{
+                'id': p.id,
+                'nombre': p.nombre,
+                'descripcion': p.descripcion,
+                'precio_mensual': float(p.precio_mensual) if p.precio_mensual else 0,
+                'precio_anual': float(p.precio_anual) if p.precio_anual else 0,
+                'ventajas': p.ventajas,
+            } for p in planes]
+        }, 200
 
 
 @ns.route('/parejas')

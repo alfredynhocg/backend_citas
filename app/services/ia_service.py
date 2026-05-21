@@ -5,67 +5,52 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+OLLAMA_URL  = os.getenv('OLLAMA_URL', 'http://localhost:11434')
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama3.2:3b')
+
+
 class IAService:
     @staticmethod
     def consultar_ia(mensaje):
         try:
-            api_key = os.getenv('OPENROUTER_API_KEY')
-            
-            if not api_key:
-                return {"success": False, "error": "API_KEY no encontrada en .env"}
-            
             response = requests.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                },
+                f"{OLLAMA_URL}/api/chat",
                 json={
-                    "model": "openai/gpt-3.5-turbo",
+                    "model": OLLAMA_MODEL,
                     "messages": [{"role": "user", "content": mensaje}],
-                    "max_tokens": 80
+                    "stream": False,
+                    "options": {"temperature": 0.7, "num_predict": 800},
                 },
-                timeout=30
+                timeout=120,
             )
-            
-            data = response.json()
-            
+
             if response.status_code == 200:
-                return {
-                    "success": True,
-                    "respuesta": data['choices'][0]['message']['content'],
-                    "tokens": data['usage']['total_tokens']
-                }
+                data = response.json()
+                texto = data.get('message', {}).get('content', '')
+                return {"success": True, "respuesta": texto, "tokens": 0}
             else:
-                return {"success": False, "error": data}
-                
+                return {"success": False, "error": f"Ollama error {response.status_code}: {response.text}"}
+
+        except requests.exceptions.ConnectionError:
+            return {"success": False, "error": "No se pudo conectar con Ollama. Asegúrate de que esté corriendo (ollama serve)."}
         except Exception as e:
             return {"success": False, "error": str(e)}
-    
+
     @staticmethod
     def guardar_consulta_en_db(user_id, pregunta, respuesta, tokens=None):
-        """Guardar en DB"""
-        from ..models import db
+        from ..models import db, ConsultaIA
         from datetime import datetime
-        
         try:
-            # Omitir guardado si no querés usar DB todavía
-            print(f"Guardando consulta - User: {user_id}, Pregunta: {pregunta}")
-            print(f"Respuesta: {respuesta[:100]}...")
-            
-            # Comentado temporalmente hasta que la tabla exista
-            from ..models import ConsultaIA
             consulta = ConsultaIA(
                 user_id=user_id,
                 pregunta=pregunta,
                 respuesta=respuesta,
                 fecha=datetime.utcnow(),
-                tokens_usados=tokens
+                tokens_usados=tokens or 0,
             )
             db.session.add(consulta)
             db.session.commit()
-            
             return True
         except Exception as e:
-            print(f"Error DB: {e}")
+            print(f"Error DB ConsultaIA: {e}")
             return False

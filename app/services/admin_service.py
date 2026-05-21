@@ -6,8 +6,6 @@ from sqlalchemy import func
 
 class AdminService:
 
-    # ==================== PAGOS ====================
-
     @staticmethod
     def obtener_pagos_pendientes():
         return Pago.query.filter_by(estado='pendiente').order_by(Pago.fecha_pago.desc()).all()
@@ -64,8 +62,6 @@ class AdminService:
             raise
         return {'mensaje': 'Pago rechazado'}
 
-    # ==================== NEGOCIOS ====================
-
     @staticmethod
     def obtener_negocios_pendientes():
         return Negocio.query.filter_by(activo=False).order_by(Negocio.fecha_registro.desc()).all()
@@ -96,7 +92,6 @@ class AdminService:
             raise
         return {'mensaje': 'Negocio rechazado y eliminado'}
 
-    # ==================== REPORTES ====================
 
     @staticmethod
     def obtener_reportes():

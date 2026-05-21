@@ -7,7 +7,6 @@ from sqlalchemy import func
 
 class AdminCitaService:
 
-    # ==================== CATEGORIAS ====================
     @staticmethod
     def crear_cita_con_archivos(data, archivos):
         """Crear cita con imágenes subidas como archivos"""
@@ -27,16 +26,14 @@ class AdminCitaService:
             activo=data.get('activo', True)
         )
         db.session.add(cita)
-        db.session.flush()  # Para obtener el ID sin commit
+        db.session.flush()
         
-        # Subir las fotos
         fotos_subidas = []
         upload_folder = current_app.config.get('IMG_UPLOAD_FOLDER', 'app/static/uploads')
         os.makedirs(upload_folder, exist_ok=True)
         
         for archivo in archivos:
             if archivo and archivo.filename:
-                # Generar nombre único
                 ext = archivo.filename.rsplit('.', 1)[1].lower()
                 filename = f"cita_{cita.id}_{secrets.token_hex(8)}.{ext}"
                 filepath = os.path.join(upload_folder, filename)
@@ -62,7 +59,6 @@ class AdminCitaService:
     
     @staticmethod
     def agregar_fotos_a_cita(cita_id, archivos):
-        """Agregar fotos a una cita existente"""
         cita = Cita.query.get(cita_id)
         if not cita:
             return None
@@ -153,8 +149,6 @@ class AdminCitaService:
         db.session.commit()
         return {'mensaje': 'Categoria eliminada'}, 200
 
-
-    # ==================== NEGOCIOS ====================
 
     @staticmethod
     def obtener_todos_negocios():
@@ -255,9 +249,6 @@ class AdminCitaService:
         db.session.delete(negocio)
         db.session.commit()
         return {'mensaje': 'Negocio eliminado'}, 200
-
-
-    # ==================== CITAS ====================
 
     @staticmethod
     def obtener_todas_citas():
@@ -393,7 +384,6 @@ class AdminCitaService:
         db.session.delete(cita)
         db.session.commit()
         return {'mensaje': 'Cita eliminada'}
-    # ==================== ESTADISTICAS ====================
 
     @staticmethod
     def obtener_estadisticas():
